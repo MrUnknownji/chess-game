@@ -1,4 +1,4 @@
-import { GameState, Board, PieceColor } from "./types";
+import { GameState, Board, PieceColor, Piece } from "./types";
 import { findKing } from "./boardUtils";
 
 export const isValidMove = (
@@ -338,8 +338,11 @@ export const isCheckmate = (gameState: GameState): boolean => {
 };
 
 export const isStalemate = (gameState: GameState): boolean => {
-  const { currentPlayer } = gameState;
+  const { currentPlayer, board } = gameState;
+
   if (isCheck(gameState, currentPlayer)) return false;
+
+  if (hasInsufficientMaterial(board)) return true;
 
   for (let fromRow = 0; fromRow < 8; fromRow++) {
     for (let fromCol = 0; fromCol < 8; fromCol++) {
@@ -354,6 +357,67 @@ export const isStalemate = (gameState: GameState): boolean => {
   }
 
   return true;
+};
+
+const hasInsufficientMaterial = (board: (Piece | null)[][]): boolean => {
+  const pieces: Piece[] = board
+    .flat()
+    .filter((piece): piece is Piece => piece !== null);
+
+  if (pieces.length <= 2) return true;
+
+  if (pieces.length === 3) {
+    const nonKingPiece = pieces.find((piece) => piece.type !== "king");
+    if (
+      nonKingPiece &&
+      (nonKingPiece.type === "knight" || nonKingPiece.type === "bishop")
+    ) {
+      return true;
+    }
+  }
+
+  if (pieces.length === 4) {
+    const bishops = pieces.filter((piece) => piece.type === "bishop");
+    if (bishops.length === 2 && bishops[0].color !== bishops[1].color) {
+      const bishopPositions = findBishopPositions(board);
+      if (bishopPositions.length === 2) {
+        const [row1, col1] = bishopPositions[0];
+        const [row2, col2] = bishopPositions[1];
+        if ((row1 + col1) % 2 === (row2 + col2) % 2) {
+          return true;
+        }
+      }
+    }
+  }
+
+  return false;
+};
+
+const findBishopPositions = (board: (Piece | null)[][]): [number, number][] => {
+  const positions: [number, number][] = [];
+  for (let row = 0; row < 8; row++) {
+    for (let col = 0; col < 8; col++) {
+      if (board[row][col]?.type === "bishop") {
+        positions.push([row, col]);
+      }
+    }
+  }
+  return positions;
+};
+
+export const isThreefoldRepetition = (
+  gameState: GameState,
+  positionHistory: string[],
+): boolean => {
+  const currentPosition = JSON.stringify(gameState.board);
+  return (
+    positionHistory.filter((position) => position === currentPosition).length >=
+    3
+  );
+};
+
+export const isFiftyMoveRule = (moveCount: number): boolean => {
+  return moveCount >= 100;
 };
 
 export const updateEnPassantTarget = (
@@ -393,6 +457,8 @@ export const doesMoveResolveCheck = (
     whiteRooksMoved: gameState.whiteRooksMoved,
     blackRooksMoved: gameState.blackRooksMoved,
     pendingPromotion: gameState.pendingPromotion,
+    positionHistory: [...gameState.positionHistory],
+    movesSincePawnMoveOrCapture: gameState.movesSincePawnMoveOrCapture,
   };
   newGameState.board[toRow][toCol] = newGameState.board[fromRow][fromCol];
   newGameState.board[fromRow][fromCol] = null;

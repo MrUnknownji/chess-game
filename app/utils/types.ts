@@ -24,6 +24,8 @@ export interface GameState {
     from: [number, number];
     to: [number, number];
   } | null;
+  positionHistory: string[];
+  movesSincePawnMoveOrCapture: number;
 }
 
 export type Board = (Piece | null)[][];

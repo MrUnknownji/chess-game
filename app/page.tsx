@@ -11,6 +11,8 @@ import {
   isStalemate,
   isValidMove,
   updateEnPassantTarget,
+  isThreefoldRepetition,
+  isFiftyMoveRule,
 } from "./utils/moveValidation";
 import { GameState, PieceColor, PieceType } from "./utils/types";
 import PromotionDialog from "./components/PromotionDialog";
@@ -38,7 +40,6 @@ export default function Home() {
           const newBoard = JSON.parse(JSON.stringify(prevState.board));
           const piece = newBoard[fromRow][fromCol];
 
-          // Check for pawn promotion
           if (
             piece.type === "pawn" &&
             ((piece.color === "white" && toRow === 0) ||
@@ -51,20 +52,17 @@ export default function Home() {
             return prevState;
           }
 
-          // Regular move
           newBoard[toRow][toCol] = piece;
           newBoard[fromRow][fromCol] = null;
 
-          // Handle en passant capture
           if (
             piece.type === "pawn" &&
             Math.abs(fromCol - toCol) === 1 &&
             newBoard[toRow][toCol] === null
           ) {
-            newBoard[fromRow][toCol] = null; // Remove the captured pawn
+            newBoard[fromRow][toCol] = null;
           }
 
-          // Update en passant target
           const newEnPassantTarget = updateEnPassantTarget(
             prevState,
             fromRow,
@@ -73,7 +71,6 @@ export default function Home() {
             toCol,
           );
 
-          // Handle castling
           if (piece.type === "king" && Math.abs(toCol - fromCol) === 2) {
             const isKingside = toCol > fromCol;
             const rookFromCol = isKingside ? 7 : 0;
@@ -84,6 +81,17 @@ export default function Home() {
 
           const nextPlayer: PieceColor =
             prevState.currentPlayer === "white" ? "black" : "white";
+
+          const newPositionHistory = [
+            ...prevState.positionHistory,
+            JSON.stringify(newBoard),
+          ];
+          let newMovesSincePawnMoveOrCapture =
+            prevState.movesSincePawnMoveOrCapture + 1;
+
+          if (piece.type === "pawn" || newBoard[toRow][toCol] !== null) {
+            newMovesSincePawnMoveOrCapture = 0;
+          }
 
           const newGameState: GameState = {
             board: newBoard,
@@ -116,13 +124,19 @@ export default function Home() {
                   fromCol === 7),
             ],
             pendingPromotion: null,
+            positionHistory: newPositionHistory,
+            movesSincePawnMoveOrCapture: newMovesSincePawnMoveOrCapture,
           };
 
           if (isCheckmate(newGameState)) {
             setIsGameOver(true);
             setResult(`Checkmate! ${prevState.currentPlayer} wins!`);
             setIsGameStarted(false);
-          } else if (isStalemate(newGameState)) {
+          } else if (
+            isStalemate(newGameState) ||
+            isThreefoldRepetition(newGameState, newPositionHistory) ||
+            isFiftyMoveRule(newMovesSincePawnMoveOrCapture)
+          ) {
             setIsGameOver(true);
             setResult("Stalemate! The game is a draw.");
             setIsGameStarted(false);
