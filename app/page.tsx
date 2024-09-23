@@ -288,14 +288,19 @@ export default function Home() {
     }
   }, [isReviewMode]);
 
-  const handleMoveSelect = useCallback((index: number) => {
-    setGameState((prevState) => ({
-      ...prevState,
-      currentMoveIndex: index,
-      board: JSON.parse(prevState.positionHistory[index]),
-      currentPlayer: index % 2 === 0 ? "black" : "white",
-    }));
-  }, []);
+  const handleMoveSelect = useCallback(
+    (index: number) => {
+      if (isReviewMode) {
+        setGameState((prevState) => ({
+          ...prevState,
+          currentMoveIndex: index,
+          board: JSON.parse(prevState.positionHistory[index]),
+          currentPlayer: index % 2 === 0 ? "white" : "black",
+        }));
+      }
+    },
+    [isReviewMode],
+  );
 
   return (
     <DndProvider backend={HTML5Backend}>
@@ -328,16 +333,11 @@ export default function Home() {
               onToggleReviewMode={handleToggleReviewMode}
             />
           </div>
-          <div
-            className="w-full max-w-[900px] transition-all duration-1000 ease-in-out overflow-hidden"
-            style={{ maxHeight: isReviewMode ? "100px" : "0" }}
-          >
-            <MoveHistory
-              moves={gameState.moveHistory}
-              currentMoveIndex={gameState.currentMoveIndex}
-              onMoveSelect={handleMoveSelect}
-            />
-          </div>
+          <MoveHistory
+            moves={gameState.moveHistory}
+            currentMoveIndex={gameState.currentMoveIndex}
+            onMoveSelect={handleMoveSelect}
+          />
         </div>
       </div>
       <DragLayer />

@@ -1,5 +1,6 @@
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useMemo } from "react";
 import { Move, PieceType } from "../utils/types";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface MoveHistoryProps {
   moves: Move[];
@@ -12,18 +13,14 @@ const MoveHistory: React.FC<MoveHistoryProps> = ({
   currentMoveIndex,
   onMoveSelect,
 }) => {
-  const moveRefs = useRef<(HTMLDivElement | null)[]>([]);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (moveRefs.current[currentMoveIndex]) {
-      moveRefs.current[currentMoveIndex]?.scrollIntoView({
-        behavior: "smooth",
-        block: "nearest",
-        inline: "nearest",
-      });
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop =
+        scrollContainerRef.current.scrollHeight;
     }
-  }, [currentMoveIndex]);
+  }, [moves]);
 
   const renderMove = (move: Move, index: number) => {
     const isCurrentMove = index === currentMoveIndex;
@@ -38,10 +35,7 @@ const MoveHistory: React.FC<MoveHistoryProps> = ({
     return (
       <div
         key={index}
-        ref={(el) => {
-          moveRefs.current[index] = el;
-        }}
-        className={`flex-shrink-0 py-1 px-2 cursor-pointer ${
+        className={`inline-block py-1 px-2 cursor-pointer ${
           isCurrentMove ? "bg-blue-200" : "hover:bg-gray-200"
         } ${isWhiteMove ? "mr-1" : "ml-1"}`}
         onClick={() => onMoveSelect(index)}
@@ -77,18 +71,80 @@ const MoveHistory: React.FC<MoveHistoryProps> = ({
     }
   };
 
+  const containerVariants = {
+    hidden: { opacity: 0, y: 50 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.5,
+        ease: "easeOut",
+      },
+    },
+  };
+
+  const newMoveVariants = {
+    hidden: { opacity: 0, scale: 0.8 },
+    visible: {
+      opacity: 1,
+      scale: 1,
+      transition: {
+        duration: 0.3,
+        ease: "easeOut",
+      },
+    },
+  };
+
+  const memoizedMoves = useMemo(
+    () => moves.map((move, index) => renderMove(move, index)),
+    [moves, currentMoveIndex],
+  );
+
   return (
-    <div className="transition-all duration-300 ease-in-out overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100 p-6 rounded-lg shadow-lg border border-gray-200 w-full">
-      <div ref={scrollContainerRef} className="overflow-x-auto thin-scrollbar">
-        {moves.length === 0 ? (
-          <div className="text-center text-gray-500">No moves</div>
-        ) : (
-          <div className="flex space-x-2">
-            {moves.map((move, index) => renderMove(move, index))}
-          </div>
-        )}
+    <motion.div
+      className="bg-gradient-to-br from-gray-50 to-gray-100 p-6 rounded-lg shadow-lg border border-gray-200 w-full mt-8"
+      initial="hidden"
+      animate="visible"
+      variants={containerVariants}
+    >
+      <div
+        ref={scrollContainerRef}
+        className="overflow-y-auto thin-scrollbar"
+        style={{
+          scrollbarWidth: "thin",
+          maxHeight: "200px",
+          width: "100%",
+          overflowX: "hidden",
+        }}
+      >
+        <div className="flex flex-wrap">
+          {moves.length === 0 ? (
+            <motion.div
+              className="text-center text-gray-500 w-full"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+            >
+              No moves
+            </motion.div>
+          ) : (
+            <>
+              {memoizedMoves.slice(0, -1)}
+              {moves.length > 0 && (
+                <motion.div
+                  key={moves.length}
+                  variants={newMoveVariants}
+                  initial="hidden"
+                  animate="visible"
+                >
+                  {memoizedMoves[memoizedMoves.length - 1]}
+                </motion.div>
+              )}
+            </>
+          )}
+        </div>
       </div>
-    </div>
+    </motion.div>
   );
 };
 

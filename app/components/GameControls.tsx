@@ -174,17 +174,23 @@ const GameControls: React.FC<GameControlsProps> = ({
           </motion.div>
         )}
       </AnimatePresence>
-      {isGameOver && !isReviewMode && (
+      {isGameOver && (
         <motion.button
-          key="review-game"
+          key="toggle-review-mode"
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.9 }}
           transition={{ duration: 0.3 }}
-          className="bg-gradient-to-b from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-semibold py-2 px-6 rounded-md transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50 mt-4"
+          className={`bg-gradient-to-b ${
+            isReviewMode
+              ? "from-green-500 to-green-600 hover:from-green-600 hover:to-green-700"
+              : "from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700"
+          } text-white font-semibold py-2 px-6 rounded-md transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-${
+            isReviewMode ? "green" : "purple"
+          }-500 focus:ring-opacity-50 mt-4`}
           onClick={onToggleReviewMode}
         >
-          Review Game
+          {isReviewMode ? "Exit Review Mode" : "Enter Review Mode"}
         </motion.button>
       )}
 
@@ -207,12 +213,6 @@ const GameControls: React.FC<GameControlsProps> = ({
             disabled={!canRedo}
           >
             <FaRedo />
-          </button>
-          <button
-            className="bg-purple-500 text-white p-2 rounded hover:bg-purple-600"
-            onClick={onToggleReviewMode}
-          >
-            Exit Review
           </button>
         </div>
       )}

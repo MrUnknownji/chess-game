@@ -7,6 +7,7 @@ import {
   isValidMove,
   doesMoveResolveCheck,
 } from "../utils/moveValidation";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface ChessboardProps {
   gameState: GameState;
@@ -259,17 +260,53 @@ const Chessboard: React.FC<ChessboardProps> = ({
     );
   }, [winner]);
 
+  const boardVariants = {
+    hidden: { opacity: 0, scale: 0.9 },
+    visible: {
+      opacity: 1,
+      scale: 1,
+      transition: {
+        duration: 0.5,
+        ease: "easeOut",
+      },
+    },
+  };
+
+  const squareVariants = {
+    initial: { opacity: 0, scale: 0.8 },
+    animate: { opacity: 1, scale: 1 },
+    exit: { opacity: 0, scale: 0.8 },
+  };
+
   return (
-    <div className="relative">
+    <motion.div
+      className="relative"
+      initial="hidden"
+      animate="visible"
+      variants={boardVariants}
+    >
       <div className="border-8 border-[#8b4513] rounded-lg shadow-2xl overflow-hidden">
         <div className="grid grid-cols-8 w-[640px] h-[640px]">
-          {Array.from({ length: 8 }, (_, row) =>
-            Array.from({ length: 8 }, (_, col) => renderSquare(row, col)),
-          )}
+          <AnimatePresence>
+            {Array.from({ length: 8 }, (_, row) =>
+              Array.from({ length: 8 }, (_, col) => (
+                <motion.div
+                  key={`${row}-${col}`}
+                  variants={squareVariants}
+                  initial="initial"
+                  animate="animate"
+                  exit="exit"
+                  transition={{ duration: 0.2, delay: (row * 8 + col) * 0.01 }}
+                >
+                  {renderSquare(row, col)}
+                </motion.div>
+              )),
+            )}
+          </AnimatePresence>
         </div>
       </div>
       {!isReviewMode && renderCelebration()}
-    </div>
+    </motion.div>
   );
 };
 
