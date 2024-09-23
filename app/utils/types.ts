@@ -20,6 +20,10 @@ export interface GameState {
   blackKingMoved: boolean;
   whiteRooksMoved: [boolean, boolean];
   blackRooksMoved: [boolean, boolean];
+  pendingPromotion: {
+    from: [number, number];
+    to: [number, number];
+  } | null;
 }
 
 export type Board = (Piece | null)[][];

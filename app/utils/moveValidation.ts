@@ -89,6 +89,7 @@ export const isValidMove = (
   const newGameState: GameState = {
     ...gameState,
     board: JSON.parse(JSON.stringify(board)),
+    pendingPromotion: null,
   };
   newGameState.board[toRow][toCol] = newGameState.board[fromRow][fromCol];
   newGameState.board[fromRow][fromCol] = null;
@@ -108,6 +109,9 @@ const isValidPawnMove = (
   toCol: number,
 ): boolean => {
   const { board, currentPlayer, enPassantTarget } = gameState;
+  const piece = board[fromRow][fromCol];
+  if (piece?.type !== "pawn") return false;
+
   const direction = currentPlayer === "white" ? -1 : 1;
   const startRow = currentPlayer === "white" ? 6 : 1;
 
@@ -124,16 +128,14 @@ const isValidPawnMove = (
   if (Math.abs(fromCol - toCol) === 1 && toRow === fromRow + direction) {
     const targetPiece = board[toRow][toCol];
     if (targetPiece && targetPiece.color !== currentPlayer) return true;
-  }
 
-  if (
-    enPassantTarget &&
-    toRow === enPassantTarget[0] &&
-    toCol === enPassantTarget[1] &&
-    Math.abs(fromCol - toCol) === 1 &&
-    toRow === fromRow + direction
-  ) {
-    return true;
+    if (
+      enPassantTarget &&
+      toRow === enPassantTarget[0] &&
+      toCol === enPassantTarget[1]
+    ) {
+      return true;
+    }
   }
 
   return false;
@@ -390,6 +392,7 @@ export const doesMoveResolveCheck = (
     blackKingMoved: gameState.blackKingMoved,
     whiteRooksMoved: gameState.whiteRooksMoved,
     blackRooksMoved: gameState.blackRooksMoved,
+    pendingPromotion: gameState.pendingPromotion,
   };
   newGameState.board[toRow][toCol] = newGameState.board[fromRow][fromCol];
   newGameState.board[fromRow][fromCol] = null;
