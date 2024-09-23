@@ -13,5 +13,7 @@ export const createInitialGameState = (): GameState => {
     pendingPromotion: null,
     positionHistory: [],
     movesSincePawnMoveOrCapture: 0,
+    moveHistory: [],
+    currentMoveIndex: -1,
   };
 };

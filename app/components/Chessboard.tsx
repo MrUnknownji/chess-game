@@ -19,6 +19,7 @@ interface ChessboardProps {
   isGameStarted: boolean;
   isGameOver: boolean;
   winner: PieceColor | null;
+  isReviewMode: boolean;
 }
 
 interface SquareProps {
@@ -110,6 +111,7 @@ const Chessboard: React.FC<ChessboardProps> = ({
   isGameStarted,
   isGameOver,
   winner,
+  isReviewMode,
 }) => {
   const { board, currentPlayer } = gameState;
   const [selectedSquare, setSelectedSquare] = useState<[number, number] | null>(
@@ -266,7 +268,7 @@ const Chessboard: React.FC<ChessboardProps> = ({
           )}
         </div>
       </div>
-      {renderCelebration()}
+      {!isReviewMode && renderCelebration()}
     </div>
   );
 };

@@ -26,6 +26,17 @@ export interface GameState {
   } | null;
   positionHistory: string[];
   movesSincePawnMoveOrCapture: number;
+  moveHistory: Move[];
+  currentMoveIndex: number;
 }
 
 export type Board = (Piece | null)[][];
+
+export interface Move {
+  from: [number, number];
+  to: [number, number];
+  piece: Piece;
+  capturedPiece: Piece | null;
+  isPromotion: boolean;
+  promotedTo?: PieceType;
+}

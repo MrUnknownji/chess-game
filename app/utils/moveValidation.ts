@@ -459,6 +459,8 @@ export const doesMoveResolveCheck = (
     pendingPromotion: gameState.pendingPromotion,
     positionHistory: [...gameState.positionHistory],
     movesSincePawnMoveOrCapture: gameState.movesSincePawnMoveOrCapture,
+    moveHistory: [...gameState.moveHistory],
+    currentMoveIndex: gameState.currentMoveIndex,
   };
   newGameState.board[toRow][toCol] = newGameState.board[fromRow][fromCol];
   newGameState.board[fromRow][fromCol] = null;

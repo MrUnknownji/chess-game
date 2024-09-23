@@ -14,9 +14,11 @@ import {
   isThreefoldRepetition,
   isFiftyMoveRule,
 } from "./utils/moveValidation";
-import { GameState, PieceColor, PieceType } from "./utils/types";
+import { GameState, Move, PieceColor, PieceType } from "./utils/types";
 import PromotionDialog from "./components/PromotionDialog";
 import { createInitialGameState } from "./utils/gameStateUtils";
+import MoveHistory from "./components/MoveHistory";
+import Header from "./components/Header";
 
 export default function Home() {
   const [gameState, setGameState] = useState<GameState>(
@@ -31,6 +33,7 @@ export default function Home() {
     to: [number, number];
   } | null>(null);
   const [winner, setWinner] = useState<PieceColor | null>(null);
+  const [isReviewMode, setIsReviewMode] = useState(false);
 
   const handleMove = useCallback(
     (fromRow: number, fromCol: number, toRow: number, toCol: number) => {
@@ -94,6 +97,14 @@ export default function Home() {
             newMovesSincePawnMoveOrCapture = 0;
           }
 
+          const newMove: Move = {
+            from: [fromRow, fromCol],
+            to: [toRow, toCol],
+            piece: piece,
+            capturedPiece: newBoard[toRow][toCol],
+            isPromotion: false,
+          };
+
           const newGameState: GameState = {
             board: newBoard,
             currentPlayer: nextPlayer,
@@ -127,6 +138,8 @@ export default function Home() {
             pendingPromotion: null,
             positionHistory: newPositionHistory,
             movesSincePawnMoveOrCapture: newMovesSincePawnMoveOrCapture,
+            moveHistory: [...prevState.moveHistory, newMove],
+            currentMoveIndex: prevState.moveHistory.length,
           };
 
           if (isCheckmate(newGameState)) {
@@ -150,7 +163,11 @@ export default function Home() {
             setResult(null);
           }
 
-          return newGameState;
+          return {
+            ...newGameState,
+            moveHistory: [...prevState.moveHistory, newMove],
+            currentMoveIndex: prevState.moveHistory.length,
+          };
         });
       }
     },
@@ -176,11 +193,22 @@ export default function Home() {
         const nextPlayer: PieceColor =
           piece.color === "white" ? "black" : "white";
 
+        const newMove: Move = {
+          from: promotionDialog.from,
+          to: promotionDialog.to,
+          piece: piece,
+          capturedPiece: newBoard[toRow][toCol],
+          isPromotion: true,
+          promotedTo: pieceType,
+        };
+
         const newGameState: GameState = {
           ...prevState,
           board: newBoard,
           currentPlayer: nextPlayer,
           pendingPromotion: null,
+          moveHistory: [...prevState.moveHistory, newMove],
+          currentMoveIndex: prevState.moveHistory.length,
         };
 
         if (isCheckmate(newGameState)) {
@@ -224,25 +252,92 @@ export default function Home() {
     setWinner(resigningPlayer);
   }, [gameState.currentPlayer]);
 
+  const handleUndo = useCallback(() => {
+    if (gameState.currentMoveIndex > 0) {
+      setGameState((prevState) => ({
+        ...prevState,
+        currentMoveIndex: prevState.currentMoveIndex - 1,
+        board: JSON.parse(
+          prevState.positionHistory[prevState.currentMoveIndex - 1],
+        ),
+        currentPlayer: prevState.currentPlayer === "white" ? "black" : "white",
+      }));
+    }
+  }, [gameState]);
+
+  const handleRedo = useCallback(() => {
+    if (gameState.currentMoveIndex < gameState.moveHistory.length) {
+      setGameState((prevState) => ({
+        ...prevState,
+        currentMoveIndex: prevState.currentMoveIndex + 1,
+        board: JSON.parse(
+          prevState.positionHistory[prevState.currentMoveIndex + 1],
+        ),
+        currentPlayer: prevState.currentPlayer === "white" ? "black" : "white",
+      }));
+    }
+  }, [gameState]);
+
+  const handleToggleReviewMode = useCallback(() => {
+    setIsReviewMode((prev) => !prev);
+    if (!isReviewMode) {
+      setGameState((prevState) => ({
+        ...prevState,
+        currentMoveIndex: prevState.moveHistory.length - 1,
+      }));
+    }
+  }, [isReviewMode]);
+
+  const handleMoveSelect = useCallback((index: number) => {
+    setGameState((prevState) => ({
+      ...prevState,
+      currentMoveIndex: index,
+      board: JSON.parse(prevState.positionHistory[index]),
+      currentPlayer: index % 2 === 0 ? "black" : "white",
+    }));
+  }, []);
+
   return (
     <DndProvider backend={HTML5Backend}>
       <div className="min-h-screen bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center p-4">
-        <div className="bg-white rounded-xl shadow-2xl p-8 flex flex-col md:flex-row items-center space-y-8 md:space-y-0 md:space-x-12">
-          <Chessboard
-            gameState={gameState}
-            onMove={handleMove}
-            isGameStarted={isGameStarted}
-            isGameOver={isGameOver}
-            winner={winner}
-          />
-          <GameControls
-            currentPlayer={gameState.currentPlayer}
-            isGameOver={isGameOver}
-            result={result}
-            onStartNewGame={handleStartNewGame}
-            onResign={handleResign}
-            isGameStarted={isGameStarted}
-          />
+        <Header />
+        <div className="bg-white rounded-xl shadow-2xl p-8 flex flex-col items-center space-y-8">
+          <div className="flex flex-col md:flex-row items-center space-y-8 md:space-y-0 md:space-x-12">
+            <Chessboard
+              gameState={gameState}
+              onMove={handleMove}
+              isGameStarted={isGameStarted}
+              isGameOver={isGameOver}
+              winner={winner}
+              isReviewMode={isReviewMode}
+            />
+            <GameControls
+              currentPlayer={gameState.currentPlayer}
+              isGameOver={isGameOver}
+              result={result}
+              onStartNewGame={handleStartNewGame}
+              onResign={handleResign}
+              isGameStarted={isGameStarted}
+              onUndo={handleUndo}
+              onRedo={handleRedo}
+              canUndo={gameState.currentMoveIndex > 0}
+              canRedo={
+                gameState.currentMoveIndex < gameState.moveHistory.length - 1
+              }
+              isReviewMode={isReviewMode}
+              onToggleReviewMode={handleToggleReviewMode}
+            />
+          </div>
+          <div
+            className="w-full max-w-[900px] transition-all duration-1000 ease-in-out overflow-hidden"
+            style={{ maxHeight: isReviewMode ? "100px" : "0" }}
+          >
+            <MoveHistory
+              moves={gameState.moveHistory}
+              currentMoveIndex={gameState.currentMoveIndex}
+              onMoveSelect={handleMoveSelect}
+            />
+          </div>
         </div>
       </div>
       <DragLayer />

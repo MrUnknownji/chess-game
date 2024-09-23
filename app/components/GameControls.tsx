@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { PieceColor } from "../utils/types";
 import { useChessTimer } from "../hooks/useChessTimer";
 import { motion, AnimatePresence } from "framer-motion";
+import { FaUndo, FaRedo } from "react-icons/fa";
 
 interface GameControlsProps {
   currentPlayer: PieceColor;
@@ -10,6 +11,12 @@ interface GameControlsProps {
   onStartNewGame: () => void;
   onResign: () => void;
   isGameStarted: boolean;
+  onUndo: () => void;
+  onRedo: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
+  isReviewMode: boolean;
+  onToggleReviewMode: () => void;
 }
 
 const GameControls: React.FC<GameControlsProps> = ({
@@ -19,6 +26,12 @@ const GameControls: React.FC<GameControlsProps> = ({
   onStartNewGame,
   onResign,
   isGameStarted,
+  onUndo,
+  onRedo,
+  canUndo,
+  canRedo,
+  isReviewMode,
+  onToggleReviewMode,
 }) => {
   const {
     whiteTime,
@@ -161,6 +174,48 @@ const GameControls: React.FC<GameControlsProps> = ({
           </motion.div>
         )}
       </AnimatePresence>
+      {isGameOver && !isReviewMode && (
+        <motion.button
+          key="review-game"
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.9 }}
+          transition={{ duration: 0.3 }}
+          className="bg-gradient-to-b from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-semibold py-2 px-6 rounded-md transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50 mt-4"
+          onClick={onToggleReviewMode}
+        >
+          Review Game
+        </motion.button>
+      )}
+
+      {isReviewMode && (
+        <div className="mt-4 flex justify-between">
+          <button
+            className={`bg-blue-500 text-white p-2 rounded ${
+              !canUndo ? "opacity-50 cursor-not-allowed" : "hover:bg-blue-600"
+            }`}
+            onClick={onUndo}
+            disabled={!canUndo}
+          >
+            <FaUndo />
+          </button>
+          <button
+            className={`bg-blue-500 text-white p-2 rounded ${
+              !canRedo ? "opacity-50 cursor-not-allowed" : "hover:bg-blue-600"
+            }`}
+            onClick={onRedo}
+            disabled={!canRedo}
+          >
+            <FaRedo />
+          </button>
+          <button
+            className="bg-purple-500 text-white p-2 rounded hover:bg-purple-600"
+            onClick={onToggleReviewMode}
+          >
+            Exit Review
+          </button>
+        </div>
+      )}
     </motion.div>
   );
 };
