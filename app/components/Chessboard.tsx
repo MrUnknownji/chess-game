@@ -43,15 +43,21 @@ const Square: React.FC<SquareProps> = ({
   onDrop,
   currentPlayer,
 }) => {
-  const [{ isOver }, drop] = useDrop(
-    () => ({
-      accept: "chess-piece",
-      drop: (item: { fromRow: number; fromCol: number }) => onDrop(item),
-      collect: (monitor) => ({
-        isOver: !!monitor.isOver(),
-      }),
+  const [{ isOver }, dropRef] = useDrop({
+    accept: "chess-piece",
+    drop: (item: { fromRow: number; fromCol: number }) => onDrop(item),
+    collect: (monitor) => ({
+      isOver: !!monitor.isOver(),
     }),
-    [row, col, onDrop],
+  });
+
+  const setDropRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      if (node) {
+        dropRef(node);
+      }
+    },
+    [dropRef],
   );
 
   let bgColor = isLight ? "bg-[#916c4f]" : "bg-[#d8c3a5]";
@@ -63,7 +69,7 @@ const Square: React.FC<SquareProps> = ({
 
   return (
     <div
-      ref={drop}
+      ref={setDropRef}
       className={`w-20 h-20 ${bgColor} ${
         isOver ? "bg-opacity-70" : ""
       } transition-all duration-200 ease-in-out hover:brightness-110 relative`}

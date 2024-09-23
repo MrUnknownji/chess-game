@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect } from "react";
+import React, { useCallback, useEffect, useRef } from "react";
 import { useDrag } from "react-dnd";
 import { getEmptyImage } from "react-dnd-html5-backend";
 
@@ -24,6 +24,7 @@ const ChessPiece: React.FC<ChessPieceProps> = ({
   onPieceSelect,
   isDragging = false,
 }) => {
+  const pieceRef = useRef<HTMLDivElement>(null);
   const [{ isDragging: _isDragging }, drag, preview] = useDrag(
     () => ({
       type: "chess-piece",
@@ -198,9 +199,13 @@ const ChessPiece: React.FC<ChessPieceProps> = ({
     preview(getEmptyImage(), { captureDraggingState: true });
   }, [preview]);
 
+  useEffect(() => {
+    drag(pieceRef);
+  }, [drag]);
+
   return (
     <div
-      ref={drag}
+      ref={pieceRef}
       className={`${
         color === "white" ? "text-white" : "text-black"
       } cursor-move absolute inset-0 flex items-center justify-center w-full h-full`}

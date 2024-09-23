@@ -10,10 +10,19 @@ export const isValidMove = (
 ): boolean => {
   const { board, currentPlayer } = gameState;
   const piece = board[fromRow][fromCol];
-  if (!piece || piece.color !== currentPlayer) return false;
+
+  if (!piece || piece.color !== currentPlayer) {
+    return false;
+  }
 
   const targetPiece = board[toRow][toCol];
-  if (targetPiece && targetPiece.color === currentPlayer) return false;
+  if (targetPiece && targetPiece.color === currentPlayer) {
+    return false;
+  }
+
+  if (piece.type === "king" && Math.abs(toCol - fromCol) === 2) {
+    return isCastlingValid(gameState, fromRow, fromCol, toRow, toCol);
+  }
 
   let validAccordingToPieceRules = false;
   switch (piece.type) {
@@ -73,17 +82,22 @@ export const isValidMove = (
       break;
   }
 
-  if (!validAccordingToPieceRules) return false;
+  if (!validAccordingToPieceRules) {
+    return false;
+  }
 
   const newGameState: GameState = {
-    board: JSON.parse(JSON.stringify(gameState.board)),
-    currentPlayer: gameState.currentPlayer,
-    enPassantTarget: gameState.enPassantTarget,
+    ...gameState,
+    board: JSON.parse(JSON.stringify(board)),
   };
   newGameState.board[toRow][toCol] = newGameState.board[fromRow][fromCol];
   newGameState.board[fromRow][fromCol] = null;
 
-  return !isCheck(newGameState, currentPlayer);
+  if (isCheck(gameState, currentPlayer)) {
+    return !isCheck(newGameState, currentPlayer);
+  } else {
+    return !isCheck(newGameState, currentPlayer);
+  }
 };
 
 const isValidPawnMove = (
@@ -244,15 +258,7 @@ export const isCheck = (gameState: GameState, player: PieceColor): boolean => {
     for (let col = 0; col < 8; col++) {
       const piece = board[row][col];
       if (piece && piece.color === opponentColor) {
-        if (
-          isValidMove(
-            { ...gameState, currentPlayer: opponentColor },
-            row,
-            col,
-            kingRow,
-            kingCol,
-          )
-        ) {
+        if (canPieceAttackKing(gameState, row, col, kingRow, kingCol)) {
           return true;
         }
       }
@@ -260,6 +266,54 @@ export const isCheck = (gameState: GameState, player: PieceColor): boolean => {
   }
 
   return false;
+};
+
+const canPieceAttackKing = (
+  gameState: GameState,
+  fromRow: number,
+  fromCol: number,
+  kingRow: number,
+  kingCol: number,
+): boolean => {
+  const { board } = gameState;
+  const piece = board[fromRow][fromCol];
+
+  if (!piece) return false;
+
+  switch (piece.type) {
+    case "pawn":
+      return isValidPawnAttack(piece.color, fromRow, fromCol, kingRow, kingCol);
+    case "rook":
+      return isValidRookMove(board, fromRow, fromCol, kingRow, kingCol);
+    case "knight":
+      return isValidKnightMove(fromRow, fromCol, kingRow, kingCol);
+    case "bishop":
+      return isValidBishopMove(board, fromRow, fromCol, kingRow, kingCol);
+    case "queen":
+      return isValidQueenMove(board, fromRow, fromCol, kingRow, kingCol);
+    case "king":
+      return isValidKingMove(
+        board,
+        fromRow,
+        fromCol,
+        kingRow,
+        kingCol,
+        piece.color,
+      );
+    default:
+      return false;
+  }
+};
+
+const isValidPawnAttack = (
+  pawnColor: PieceColor,
+  fromRow: number,
+  fromCol: number,
+  toRow: number,
+  toCol: number,
+): boolean => {
+  const direction = pawnColor === "white" ? -1 : 1;
+  return toRow === fromRow + direction && Math.abs(toCol - fromCol) === 1;
 };
 
 export const isCheckmate = (gameState: GameState): boolean => {
@@ -332,8 +386,84 @@ export const doesMoveResolveCheck = (
     board: JSON.parse(JSON.stringify(gameState.board)),
     currentPlayer: gameState.currentPlayer,
     enPassantTarget: gameState.enPassantTarget,
+    whiteKingMoved: gameState.whiteKingMoved,
+    blackKingMoved: gameState.blackKingMoved,
+    whiteRooksMoved: gameState.whiteRooksMoved,
+    blackRooksMoved: gameState.blackRooksMoved,
   };
   newGameState.board[toRow][toCol] = newGameState.board[fromRow][fromCol];
   newGameState.board[fromRow][fromCol] = null;
-  return !isCheck(newGameState, newGameState.currentPlayer);
+  return !isCheck(newGameState, gameState.currentPlayer);
+};
+
+const isCastlingValid = (
+  gameState: GameState,
+  fromRow: number,
+  fromCol: number,
+  toRow: number,
+  toCol: number,
+): boolean => {
+  const { board, currentPlayer } = gameState;
+  const piece = board[fromRow][fromCol];
+
+  if (piece?.type !== "king") return false;
+  if (fromRow !== toRow) return false;
+  if (Math.abs(fromCol - toCol) !== 2) return false;
+
+  const isKingside = toCol > fromCol;
+  const rookCol = isKingside ? 7 : 0;
+  const rookPiece = board[fromRow][rookCol];
+
+  if (
+    !rookPiece ||
+    rookPiece.type !== "rook" ||
+    rookPiece.color !== currentPlayer
+  )
+    return false;
+
+  const kingHasMoved =
+    currentPlayer === "white"
+      ? gameState.whiteKingMoved
+      : gameState.blackKingMoved;
+  const rookHasMoved =
+    currentPlayer === "white"
+      ? gameState.whiteRooksMoved[isKingside ? 1 : 0]
+      : gameState.blackRooksMoved[isKingside ? 1 : 0];
+
+  if (kingHasMoved || rookHasMoved) return false;
+
+  const direction = isKingside ? 1 : -1;
+  for (let col = fromCol + direction; col !== rookCol; col += direction) {
+    if (board[fromRow][col] !== null) return false;
+  }
+
+  const checkSquares = isKingside ? [4, 5, 6] : [2, 3, 4];
+  for (const col of checkSquares) {
+    if (
+      isCheck(
+        {
+          ...gameState,
+          board: simulateMove(board, fromRow, fromCol, fromRow, col),
+        },
+        currentPlayer,
+      )
+    ) {
+      return false;
+    }
+  }
+
+  return true;
+};
+
+const simulateMove = (
+  board: Board,
+  fromRow: number,
+  fromCol: number,
+  toRow: number,
+  toCol: number,
+): Board => {
+  const newBoard = JSON.parse(JSON.stringify(board));
+  newBoard[toRow][toCol] = newBoard[fromRow][fromCol];
+  newBoard[fromRow][fromCol] = null;
+  return newBoard;
 };

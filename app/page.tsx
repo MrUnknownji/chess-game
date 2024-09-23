@@ -20,7 +20,12 @@ export default function Home() {
     board: initialBoard,
     currentPlayer: "white",
     enPassantTarget: null,
+    whiteKingMoved: false,
+    blackKingMoved: false,
+    whiteRooksMoved: [false, false],
+    blackRooksMoved: [false, false],
   });
+
   const [isGameOver, setIsGameOver] = useState(false);
   const [result, setResult] = useState<string | null>(null);
   const [isGameStarted, setIsGameStarted] = useState(false);
@@ -32,8 +37,18 @@ export default function Home() {
       if (isValidMove(gameState, fromRow, fromCol, toRow, toCol)) {
         setGameState((prevState: GameState) => {
           const newBoard = JSON.parse(JSON.stringify(prevState.board));
-          newBoard[toRow][toCol] = newBoard[fromRow][fromCol];
+          const piece = newBoard[fromRow][fromCol];
+
+          newBoard[toRow][toCol] = piece;
           newBoard[fromRow][fromCol] = null;
+
+          if (piece.type === "king" && Math.abs(toCol - fromCol) === 2) {
+            const isKingside = toCol > fromCol;
+            const rookFromCol = isKingside ? 7 : 0;
+            const rookToCol = isKingside ? toCol - 1 : toCol + 1;
+            newBoard[toRow][rookToCol] = newBoard[toRow][rookFromCol];
+            newBoard[toRow][rookFromCol] = null;
+          }
 
           if (
             prevState.enPassantTarget &&
@@ -54,11 +69,37 @@ export default function Home() {
             toCol,
           );
 
-          const newGameState: GameState = {
+          const newGameState = {
             board: newBoard,
             currentPlayer: nextPlayer,
             enPassantTarget: newEnPassantTarget,
-          };
+            whiteKingMoved:
+              prevState.whiteKingMoved ||
+              (piece.type === "king" && piece.color === "white"),
+            blackKingMoved:
+              prevState.blackKingMoved ||
+              (piece.type === "king" && piece.color === "black"),
+            whiteRooksMoved: [
+              prevState.whiteRooksMoved[0] ||
+                (piece.type === "rook" &&
+                  piece.color === "white" &&
+                  fromCol === 0),
+              prevState.whiteRooksMoved[1] ||
+                (piece.type === "rook" &&
+                  piece.color === "white" &&
+                  fromCol === 7),
+            ],
+            blackRooksMoved: [
+              prevState.blackRooksMoved[0] ||
+                (piece.type === "rook" &&
+                  piece.color === "black" &&
+                  fromCol === 0),
+              prevState.blackRooksMoved[1] ||
+                (piece.type === "rook" &&
+                  piece.color === "black" &&
+                  fromCol === 7),
+            ],
+          } as GameState;
 
           if (isCheckmate(newGameState)) {
             setIsGameOver(true);
@@ -86,6 +127,10 @@ export default function Home() {
       board: initialBoard,
       currentPlayer: "white",
       enPassantTarget: null,
+      whiteKingMoved: false,
+      blackKingMoved: false,
+      whiteRooksMoved: [false, false],
+      blackRooksMoved: [false, false],
     });
     setIsGameOver(false);
     setResult(null);

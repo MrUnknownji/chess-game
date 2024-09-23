@@ -16,6 +16,10 @@ export interface GameState {
   board: Board;
   currentPlayer: PieceColor;
   enPassantTarget: [number, number] | null;
+  whiteKingMoved: boolean;
+  blackKingMoved: boolean;
+  whiteRooksMoved: [boolean, boolean];
+  blackRooksMoved: [boolean, boolean];
 }
 
 export type Board = (Piece | null)[][];
