@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useMemo } from "react";
 import { Move, PieceType } from "../utils/types";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 
 interface MoveHistoryProps {
   moves: Move[];
@@ -21,36 +21,6 @@ const MoveHistory: React.FC<MoveHistoryProps> = ({
         scrollContainerRef.current.scrollHeight;
     }
   }, [moves]);
-
-  const renderMove = (move: Move, index: number) => {
-    const isCurrentMove = index === currentMoveIndex;
-    const moveNumber = Math.floor(index / 2) + 1;
-    const isWhiteMove = index % 2 === 0;
-
-    const from = `${String.fromCharCode(97 + move.from[1])}${8 - move.from[0]}`;
-    const to = `${String.fromCharCode(97 + move.to[1])}${8 - move.to[0]}`;
-    const pieceSymbol = getPieceSymbol(move.piece.type);
-    const moveNotation = `${pieceSymbol}${from}-${to}`;
-
-    return (
-      <div
-        key={index}
-        className={`inline-block py-1 px-2 cursor-pointer ${
-          isCurrentMove ? "bg-blue-200" : "hover:bg-gray-200"
-        } ${isWhiteMove ? "mr-1" : "ml-1"}`}
-        onClick={() => onMoveSelect(index)}
-      >
-        {isWhiteMove && (
-          <span className="mr-2 text-gray-500 font-semibold">
-            {moveNumber}.
-          </span>
-        )}
-        <span className={isWhiteMove ? "text-black" : "text-gray-600"}>
-          {moveNotation}
-        </span>
-      </div>
-    );
-  };
 
   const getPieceSymbol = (pieceType: PieceType): string => {
     switch (pieceType) {
@@ -95,10 +65,39 @@ const MoveHistory: React.FC<MoveHistoryProps> = ({
     },
   };
 
-  const memoizedMoves = useMemo(
-    () => moves.map((move, index) => renderMove(move, index)),
-    [moves, currentMoveIndex],
-  );
+  const memoizedMoves = useMemo(() => {
+    const renderMove = (move: Move, index: number) => {
+      const isCurrentMove = index === currentMoveIndex;
+      const moveNumber = Math.floor(index / 2) + 1;
+      const isWhiteMove = index % 2 === 0;
+
+      const from = `${String.fromCharCode(97 + move.from[1])}${8 - move.from[0]}`;
+      const to = `${String.fromCharCode(97 + move.to[1])}${8 - move.to[0]}`;
+      const pieceSymbol = getPieceSymbol(move.piece.type);
+      const moveNotation = `${pieceSymbol}${from}-${to}`;
+
+      return (
+        <div
+          key={index}
+          className={`inline-block py-1 px-2 cursor-pointer ${
+            isCurrentMove ? "bg-blue-200" : "hover:bg-gray-200"
+          } ${isWhiteMove ? "mr-1" : "ml-1"}`}
+          onClick={() => onMoveSelect(index)}
+        >
+          {isWhiteMove && (
+            <span className="mr-2 text-gray-500 font-semibold">
+              {moveNumber}.
+            </span>
+          )}
+          <span className={isWhiteMove ? "text-black" : "text-gray-600"}>
+            {moveNotation}
+          </span>
+        </div>
+      );
+    };
+
+    return moves.map((move, index) => renderMove(move, index));
+  }, [moves, currentMoveIndex, onMoveSelect]);
 
   return (
     <motion.div
