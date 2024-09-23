@@ -219,15 +219,14 @@ export default function Home() {
 
   return (
     <DndProvider backend={HTML5Backend}>
-      <div className="flex flex-col md:flex-row items-center justify-center min-h-screen bg-gray-100 p-4">
-        <Chessboard
-          gameState={gameState}
-          onMove={handleMove}
-          isGameStarted={isGameStarted}
-          isGameOver={isGameOver}
-        />
-
-        <div className="mt-8 md:mt-0 md:ml-8">
+      <div className="min-h-screen bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center p-4">
+        <div className="bg-white rounded-xl shadow-2xl p-8 flex flex-col md:flex-row items-center space-y-8 md:space-y-0 md:space-x-12">
+          <Chessboard
+            gameState={gameState}
+            onMove={handleMove}
+            isGameStarted={isGameStarted}
+            isGameOver={isGameOver}
+          />
           <GameControls
             currentPlayer={gameState.currentPlayer}
             isGameOver={isGameOver}

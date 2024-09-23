@@ -60,23 +60,27 @@ const Square: React.FC<SquareProps> = ({
     [dropRef],
   );
 
-  let bgColor = isLight ? "bg-[#916c4f]" : "bg-[#d8c3a5]";
+  let bgColor = isLight ? "bg-[#f0d9b5]" : "bg-[#b58863]";
+  let hoverColor = isLight ? "hover:bg-[#e6cfa5]" : "hover:bg-[#a57853]";
+
   if (isSelected) {
-    bgColor = "bg-[#8f9c21]";
+    bgColor = "bg-[#f7ec5e]";
+    hoverColor = "hover:bg-[#f8e94e]";
   } else if (isPossibleMove) {
-    bgColor = "bg-[#d9b85c]";
+    bgColor = isLight ? "bg-[#cdd26a]" : "bg-[#aaa23a]";
+    hoverColor = isLight ? "hover:bg-[#bdc25a]" : "hover:bg-[#9a922a]";
   }
 
   return (
     <div
       ref={setDropRef}
-      className={`w-20 h-20 ${bgColor} ${
-        isOver ? "bg-opacity-70" : ""
-      } transition-all duration-200 ease-in-out hover:brightness-110 relative`}
+      className={`w-20 h-20 ${bgColor} ${hoverColor} ${
+        isOver ? "brightness-110" : ""
+      } transition-all duration-200 ease-in-out relative`}
       onClick={onClick}
     >
       {row === 7 && (
-        <span className="absolute bottom-1 left-1 text-xs font-semibold text-gray-600">
+        <span className="absolute bottom-1 right-1 text-xs font-semibold text-gray-600">
           {String.fromCharCode(97 + col)}
         </span>
       )}
