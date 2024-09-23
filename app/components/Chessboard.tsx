@@ -18,6 +18,7 @@ interface ChessboardProps {
   ) => void;
   isGameStarted: boolean;
   isGameOver: boolean;
+  winner: PieceColor | null;
 }
 
 interface SquareProps {
@@ -108,6 +109,7 @@ const Chessboard: React.FC<ChessboardProps> = ({
   onMove,
   isGameStarted,
   isGameOver,
+  winner,
 }) => {
   const { board, currentPlayer } = gameState;
   const [selectedSquare, setSelectedSquare] = useState<[number, number] | null>(
@@ -234,6 +236,27 @@ const Chessboard: React.FC<ChessboardProps> = ({
     ],
   );
 
+  const renderCelebration = useCallback(() => {
+    if (!winner) return null;
+
+    const color = winner === "white" ? "text-white" : "text-black";
+    const backgroundColor = winner === "white" ? "bg-black" : "bg-white";
+
+    return (
+      <div className="absolute inset-0 flex items-center justify-center z-10">
+        <div
+          className={`${backgroundColor} bg-opacity-70 absolute inset-0`}
+        ></div>
+        <div
+          className={`${color} text-9xl font-bold transform -rotate-45 select-none`}
+          style={{ textShadow: "2px 2px 4px rgba(0,0,0,0.5)" }}
+        >
+          {winner.toUpperCase()} WINS!
+        </div>
+      </div>
+    );
+  }, [winner]);
+
   return (
     <div className="relative">
       <div className="border-8 border-[#8b4513] rounded-lg shadow-2xl overflow-hidden">
@@ -243,6 +266,7 @@ const Chessboard: React.FC<ChessboardProps> = ({
           )}
         </div>
       </div>
+      {renderCelebration()}
     </div>
   );
 };

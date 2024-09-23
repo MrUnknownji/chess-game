@@ -30,6 +30,7 @@ export default function Home() {
     from: [number, number];
     to: [number, number];
   } | null>(null);
+  const [winner, setWinner] = useState<PieceColor | null>(null);
 
   const handleMove = useCallback(
     (fromRow: number, fromCol: number, toRow: number, toCol: number) => {
@@ -130,8 +131,11 @@ export default function Home() {
 
           if (isCheckmate(newGameState)) {
             setIsGameOver(true);
-            setResult(`Checkmate! ${prevState.currentPlayer} wins!`);
+            setResult(
+              `Checkmate! ${piece.color.charAt(0).toUpperCase() + piece.color.slice(1)} wins!`,
+            );
             setIsGameStarted(false);
+            setWinner(piece.color);
           } else if (
             isStalemate(newGameState) ||
             isThreefoldRepetition(newGameState, newPositionHistory) ||
@@ -206,15 +210,18 @@ export default function Home() {
     setIsGameOver(false);
     setResult(null);
     setIsGameStarted(true);
+    setWinner(null);
   }, []);
 
   const handleResign = useCallback(() => {
     const currentPlayer = gameState.currentPlayer;
+    const resigningPlayer = currentPlayer === "white" ? "black" : "white";
     setIsGameOver(true);
     setResult(
-      `${currentPlayer} resigns. ${currentPlayer === "white" ? "Black" : "White"} wins!`,
+      `${currentPlayer.charAt(0).toUpperCase() + currentPlayer.slice(1)} resigns. ${resigningPlayer.charAt(0).toUpperCase() + resigningPlayer.slice(1)} wins!`,
     );
     setIsGameStarted(false);
+    setWinner(resigningPlayer);
   }, [gameState.currentPlayer]);
 
   return (
@@ -226,6 +233,7 @@ export default function Home() {
             onMove={handleMove}
             isGameStarted={isGameStarted}
             isGameOver={isGameOver}
+            winner={winner}
           />
           <GameControls
             currentPlayer={gameState.currentPlayer}
