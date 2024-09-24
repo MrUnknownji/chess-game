@@ -101,7 +101,7 @@ const MoveHistory: React.FC<MoveHistoryProps> = ({
 
   return (
     <motion.div
-      className="bg-gradient-to-br from-gray-50 to-gray-100 p-6 rounded-lg shadow-lg border border-gray-200 w-full mt-8"
+      className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 sm:p-6 rounded-lg shadow-lg border border-gray-200 w-full mt-8"
       initial="hidden"
       animate="visible"
       variants={containerVariants}
