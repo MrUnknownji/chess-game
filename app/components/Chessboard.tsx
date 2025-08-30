@@ -30,6 +30,8 @@ interface SquareProps {
   isLight: boolean;
   isSelected: boolean;
   isPossibleMove: boolean;
+  isLastMove: boolean;
+  isInCheck: boolean;
   onClick: () => void;
   onDrop: (item: { fromRow: number; fromCol: number }) => void;
   currentPlayer: PieceColor;
@@ -42,6 +44,8 @@ const Square: React.FC<SquareProps> = ({
   isLight,
   isSelected,
   isPossibleMove,
+  isLastMove,
+  isInCheck,
   onClick,
   onDrop,
   currentPlayer,
@@ -66,6 +70,10 @@ const Square: React.FC<SquareProps> = ({
   let bgColor = isLight ? "bg-[#f0d9b5]" : "bg-[#b58863]";
   let hoverColor = isLight ? "hover:bg-[#e6cfa5]" : "hover:bg-[#a57853]";
 
+  if (isLastMove) {
+    bgColor = isLight ? "bg-[#d4e4a7]" : "bg-[#baca8f]";
+  }
+
   if (isSelected) {
     bgColor = "bg-[#f7ec5e]";
     hoverColor = "hover:bg-[#f8e94e]";
@@ -77,11 +85,20 @@ const Square: React.FC<SquareProps> = ({
   return (
     <div
       ref={setDropRef}
-      className={`w-20 h-20 ${bgColor} ${hoverColor} ${
+      className={`w-full h-full ${bgColor} ${hoverColor} ${
         isOver ? "brightness-110" : ""
-      } transition-all duration-200 ease-in-out relative`}
+      } transition-all duration-200 ease-in-out relative aspect-square`}
       onClick={onClick}
     >
+      {isInCheck && (
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(ellipse at center, rgba(255,0,0,0.5) 0%, rgba(255,0,0,0) 70%)",
+          }}
+        />
+      )}
       {row === 7 && (
         <span className="absolute bottom-1 right-1 text-xs font-semibold text-gray-600">
           {String.fromCharCode(97 + col)}
@@ -209,8 +226,19 @@ const Chessboard: React.FC<ChessboardProps> = ({
       const isPossibleMove = possibleMoves.some(
         ([r, c]) => r === row && c === col,
       );
-
+      const lastMove =
+        gameState.currentMoveIndex > 0
+          ? gameState.moveHistory[gameState.currentMoveIndex - 1]
+          : null;
+      const isLastMove =
+        lastMove &&
+        ((lastMove.from[0] === row && lastMove.from[1] === col) ||
+          (lastMove.to[0] === row && lastMove.to[1] === col));
       const piece = board[row][col];
+      const isInCheck =
+        piece?.type === "king" &&
+        piece?.color === gameState.currentPlayer &&
+        isCheck(gameState, gameState.currentPlayer);
 
       return (
         <Square
@@ -221,6 +249,8 @@ const Chessboard: React.FC<ChessboardProps> = ({
           isLight={isLight}
           isSelected={isSelected}
           isPossibleMove={isPossibleMove}
+          isLastMove={isLastMove}
+          isInCheck={isInCheck}
           onClick={() => handleSquareClick(row, col)}
           onDrop={(item) =>
             handlePieceDrop(item.fromRow, item.fromCol, row, col)
@@ -236,6 +266,7 @@ const Chessboard: React.FC<ChessboardProps> = ({
       handleSquareClick,
       handlePieceDrop,
       currentPlayer,
+      gameState,
     ],
   );
 
@@ -285,8 +316,8 @@ const Chessboard: React.FC<ChessboardProps> = ({
       animate="visible"
       variants={boardVariants}
     >
-      <div className="border-8 border-[#8b4513] rounded-lg shadow-2xl overflow-hidden">
-        <div className="grid grid-cols-8 w-[640px] h-[640px]">
+      <div className="border-8 border-[#8b4513] rounded-lg shadow-2xl overflow-hidden w-full max-w-[min(calc(100vh-200px),640px)] aspect-square">
+        <div className="grid grid-cols-8 w-full h-full">
           <AnimatePresence>
             {Array.from({ length: 8 }, (_, row) =>
               Array.from({ length: 8 }, (_, col) => (
@@ -297,6 +328,7 @@ const Chessboard: React.FC<ChessboardProps> = ({
                   animate="animate"
                   exit="exit"
                   transition={{ duration: 0.2, delay: (row * 8 + col) * 0.01 }}
+                  className="w-full h-full"
                 >
                   {renderSquare(row, col)}
                 </motion.div>
