@@ -1,4 +1,4 @@
-import { GameState, Board, PieceColor, Piece, Move } from "./types";
+import { GameState, Board, PieceColor, Piece } from "./types";
 import { findKing, deepCloneBoard } from "./boardUtils";
 
 const simulateMove = (
@@ -323,26 +323,28 @@ const isValidPawnAttack = (
   return toRow === fromRow + direction && Math.abs(toCol - fromCol) === 1;
 };
 
-export const generateValidMoves = (gameState: GameState): Move[] => {
-    const { currentPlayer, board } = gameState;
-    const validMoves: Move[] = [];
+export const generateValidMoves = (
+  gameState: GameState,
+): { from: [number, number]; to: [number, number] }[] => {
+  const { currentPlayer, board } = gameState;
+  const validMoves: { from: [number, number]; to: [number, number] }[] = [];
 
-    for (let fromRow = 0; fromRow < 8; fromRow++) {
-      for (let fromCol = 0; fromCol < 8; fromCol++) {
-        const piece = board[fromRow][fromCol];
-        if (piece && piece.color === currentPlayer) {
-          for (let toRow = 0; toRow < 8; toRow++) {
-            for (let toCol = 0; toCol < 8; toCol++) {
-              if (isValidMove(gameState, fromRow, fromCol, toRow, toCol)) {
-                validMoves.push({ from: [fromRow, fromCol], to: [toRow, toCol], piece });
-              }
+  for (let fromRow = 0; fromRow < 8; fromRow++) {
+    for (let fromCol = 0; fromCol < 8; fromCol++) {
+      const piece = board[fromRow][fromCol];
+      if (piece && piece.color === currentPlayer) {
+        for (let toRow = 0; toRow < 8; toRow++) {
+          for (let toCol = 0; toCol < 8; toCol++) {
+            if (isValidMove(gameState, fromRow, fromCol, toRow, toCol)) {
+              validMoves.push({ from: [fromRow, fromCol], to: [toRow, toCol] });
             }
           }
         }
       }
     }
-    return validMoves;
-  };
+  }
+  return validMoves;
+};
 
 export const isCheckmate = (gameState: GameState): boolean => {
   const { currentPlayer } = gameState;

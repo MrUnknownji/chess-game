@@ -231,9 +231,9 @@ const Chessboard: React.FC<ChessboardProps> = ({
           ? gameState.moveHistory[gameState.currentMoveIndex - 1]
           : null;
       const isLastMove =
-        lastMove &&
+        !!(lastMove &&
         ((lastMove.from[0] === row && lastMove.from[1] === col) ||
-          (lastMove.to[0] === row && lastMove.to[1] === col));
+          (lastMove.to[0] === row && lastMove.to[1] === col)));
       const piece = board[row][col];
       const isInCheck =
         piece?.type === "king" &&

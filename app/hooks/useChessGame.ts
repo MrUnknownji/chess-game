@@ -36,6 +36,10 @@ export const useChessGame = () => {
           const newBoard = deepCloneBoard(prevState.board);
           const piece = newBoard[fromRow][fromCol];
 
+          if (!piece) {
+            return prevState;
+          }
+
           if (
             piece.type === "pawn" &&
             ((piece.color === "white" && toRow === 0) ||
@@ -179,6 +183,10 @@ export const useChessGame = () => {
         const [fromRow, fromCol] = promotionDialog.from;
         const [toRow, toCol] = promotionDialog.to;
         const piece = newBoard[fromRow][fromCol];
+
+        if (!piece) {
+          return prevState;
+        }
 
         newBoard[toRow][toCol] = {
           type: pieceType,
