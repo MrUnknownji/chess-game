@@ -61,7 +61,7 @@ const ChessPiece: React.FC<ChessPieceProps> = ({
         display: isDragging ? "block" : "flex",
       }}
     >
-      <div className="w-14 h-14">{pieceIcon}</div>
+      <div className="w-3/4 h-3/4">{pieceIcon}</div>
     </div>
   );
 };

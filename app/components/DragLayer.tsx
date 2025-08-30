@@ -30,7 +30,10 @@ const DragLayer = () => {
           position: "absolute",
           left: currentOffset?.x,
           top: currentOffset?.y,
-          transform: "translate(-50%, -50%)",
+          transform: "translate(-50%, -50%) scale(1.2)",
+          opacity: 0.8,
+          width: "80px",
+          height: "80px",
         }}
       >
         <ChessPiece

@@ -43,3 +43,7 @@ export const findKing = (
   }
   return null;
 };
+
+export const deepCloneBoard = (board: Board): Board => {
+  return board.map(row => row.map(piece => (piece ? { ...piece } : null)));
+};
