@@ -316,7 +316,7 @@ const Chessboard: React.FC<ChessboardProps> = ({
       animate="visible"
       variants={boardVariants}
     >
-      <div className="border-8 border-[#8b4513] rounded-lg shadow-2xl overflow-hidden w-[90vw] md:w-full max-w-[640px] aspect-square">
+      <div className="border-8 border-[#8b4513] rounded-lg shadow-2xl overflow-hidden w-[min(90vw,640px)] aspect-square">
         <div className="grid grid-cols-8 w-full h-full">
           <AnimatePresence>
             {Array.from({ length: 8 }, (_, row) =>
