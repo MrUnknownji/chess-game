@@ -82,9 +82,9 @@ const GameControls: React.FC<GameControlsProps> = ({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="bg-gradient-to-br from-gray-50 to-gray-100 p-6 rounded-lg shadow-lg border border-gray-200 w-80"
+      className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-6 rounded-lg shadow-lg border border-gray-200 w-full"
     >
-      <h2 className="text-2xl font-semibold mb-6 text-gray-800 text-center">
+      <h2 className="text-xl md:text-2xl font-semibold mb-4 md:mb-6 text-gray-800 text-center">
         Game Controls
       </h2>
       <div className="mb-6 space-y-4">
@@ -96,7 +96,7 @@ const GameControls: React.FC<GameControlsProps> = ({
             transition={{ duration: 0.3, delay: color === "black" ? 0 : 0.1 }}
             className="flex items-center justify-between"
           >
-            <span className="text-lg font-medium capitalize text-gray-700">
+            <span className="text-base md:text-lg font-medium capitalize text-gray-700">
               {color}
             </span>
             <motion.div
@@ -113,7 +113,7 @@ const GameControls: React.FC<GameControlsProps> = ({
                   : ""
               }`}
             >
-              <div className="text-xl font-mono tracking-wider text-gray-800">
+              <div className="text-lg md:text-xl font-mono tracking-wider text-gray-800">
                 {formatTime(color === "white" ? whiteTime : blackTime)}
               </div>
             </motion.div>
@@ -128,7 +128,7 @@ const GameControls: React.FC<GameControlsProps> = ({
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.9 }}
             transition={{ duration: 0.3 }}
-            className="bg-gradient-to-b from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold py-2 px-6 rounded-md transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
+            className="bg-gradient-to-b from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold py-2 px-4 text-sm md:text-base md:px-6 rounded-md transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
             onClick={handleNewGame}
           >
             Start Game
@@ -141,7 +141,7 @@ const GameControls: React.FC<GameControlsProps> = ({
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.9 }}
             transition={{ duration: 0.3 }}
-            className="bg-gradient-to-b from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold py-2 px-6 rounded-md transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50"
+            className="bg-gradient-to-b from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold py-2 px-4 text-sm md:text-base md:px-6 rounded-md transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50"
             onClick={onResign}
           >
             Resign
@@ -185,7 +185,7 @@ const GameControls: React.FC<GameControlsProps> = ({
             isReviewMode
               ? "from-green-500 to-green-600 hover:from-green-600 hover:to-green-700"
               : "from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700"
-          } text-white font-semibold py-2 px-6 rounded-md transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-${
+          } text-white font-semibold py-2 px-4 text-sm md:text-base md:px-6 rounded-md transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-${
             isReviewMode ? "green" : "purple"
           }-500 focus:ring-opacity-50 mt-4`}
           onClick={onToggleReviewMode}

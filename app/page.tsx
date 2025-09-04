@@ -33,8 +33,8 @@ export default function Home() {
     <DndProvider backend={HTML5Backend}>
       <div className="min-h-screen bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center p-4">
         <Header />
-        <div className="bg-white rounded-xl shadow-2xl p-8 flex flex-col items-center space-y-8">
-          <div className="flex flex-col md:flex-row items-center space-y-8 md:space-y-0 md:space-x-12">
+        <div className="bg-white rounded-xl shadow-2xl p-4 md:p-8 flex flex-col items-center space-y-4 md:space-y-8">
+          <div className="flex flex-col md:flex-row items-center space-y-4 md:space-y-0 md:space-x-12">
             <Chessboard
               gameState={gameState}
               onMove={handleMove}
