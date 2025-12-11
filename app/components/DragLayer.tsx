@@ -5,7 +5,7 @@ import ChessPiece from "./ChessPiece";
 const DragLayer = () => {
   const { isDragging, item, currentOffset } = useDragLayer((monitor) => ({
     item: monitor.getItem(),
-    currentOffset: monitor.getSourceClientOffset(),
+    currentOffset: monitor.getClientOffset(),
     isDragging: monitor.isDragging(),
   }));
 
@@ -42,7 +42,7 @@ const DragLayer = () => {
           row={item.fromRow}
           col={item.fromCol}
           isCurrentPlayer={true}
-          onPieceSelect={() => {}}
+          onPieceSelect={() => { }}
           isDragging={true}
         />
       </div>

@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useMemo } from "react";
-import { Move, PieceType } from "../utils/types";
+import { Move } from "../utils/types";
 import { motion } from "framer-motion";
 
 interface MoveHistoryProps {
@@ -22,124 +22,89 @@ const MoveHistory: React.FC<MoveHistoryProps> = ({
     }
   }, [moves]);
 
-  const getPieceSymbol = (pieceType: PieceType): string => {
-    switch (pieceType) {
-      case "king":
-        return "♔";
-      case "queen":
-        return "♕";
-      case "rook":
-        return "♖";
-      case "bishop":
-        return "♗";
-      case "knight":
-        return "♘";
-      case "pawn":
-        return "♙";
-      default:
-        return "";
-    }
-  };
-
   const containerVariants = {
-    hidden: { opacity: 0, y: 50 },
+    hidden: { opacity: 0, y: 20 },
     visible: {
       opacity: 1,
       y: 0,
-      transition: {
-        duration: 0.5,
-        ease: "easeOut",
-      },
+      transition: { duration: 0.4, ease: "easeOut" },
     },
   };
 
-  const newMoveVariants = {
-    hidden: { opacity: 0, scale: 0.8 },
-    visible: {
-      opacity: 1,
-      scale: 1,
-      transition: {
-        duration: 0.3,
-        ease: "easeOut",
-      },
-    },
-  };
-
-  const memoizedMoves = useMemo(() => {
-    const renderMove = (move: Move, index: number) => {
-      const isCurrentMove = index === currentMoveIndex;
-      const moveNumber = Math.floor(index / 2) + 1;
-      const isWhiteMove = index % 2 === 0;
-
-      const from = `${String.fromCharCode(97 + move.from[1])}${8 - move.from[0]}`;
-      const to = `${String.fromCharCode(97 + move.to[1])}${8 - move.to[0]}`;
-      const pieceSymbol = getPieceSymbol(move.piece.type);
-      const moveNotation = `${pieceSymbol}${from}-${to}`;
-
-      return (
-        <div
-          key={index}
-          className={`inline-block py-1 px-2 cursor-pointer ${
-            isCurrentMove ? "bg-blue-200" : "hover:bg-gray-200"
-          } ${isWhiteMove ? "mr-1" : "ml-1"}`}
-          onClick={() => onMoveSelect(index)}
-        >
-          {isWhiteMove && (
-            <span className="mr-2 text-gray-500 font-semibold">
-              {moveNumber}.
-            </span>
-          )}
-          <span className={isWhiteMove ? "text-black" : "text-gray-600"}>
-            {moveNotation}
-          </span>
-        </div>
-      );
-    };
-
-    return moves.map((move, index) => renderMove(move, index));
-  }, [moves, currentMoveIndex, onMoveSelect]);
+  const movePairs = useMemo(() => {
+    const pairs: { white?: Move; black?: Move; index: number }[] = [];
+    for (let i = 0; i < moves.length; i += 2) {
+      pairs.push({
+        white: moves[i],
+        black: moves[i + 1],
+        index: i,
+      });
+    }
+    return pairs;
+  }, [moves]);
 
   return (
     <motion.div
-      className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 sm:p-6 rounded-lg shadow-lg border border-gray-200 w-full mt-8"
+      className="glass-panel p-5 w-full"
       initial="hidden"
       animate="visible"
       variants={containerVariants}
     >
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-base font-semibold text-slate-100">
+          Move History
+        </h3>
+        {moves.length > 0 && (
+          <span className="text-xs text-slate-500 font-medium">
+            {moves.length} {moves.length === 1 ? 'move' : 'moves'}
+          </span>
+        )}
+      </div>
       <div
         ref={scrollContainerRef}
         className="overflow-y-auto thin-scrollbar"
-        style={{
-          scrollbarWidth: "thin",
-          maxHeight: "200px",
-          width: "100%",
-          overflowX: "hidden",
-        }}
+        style={{ maxHeight: "200px", width: "100%" }}
       >
-        <div className="flex flex-wrap">
-          {moves.length === 0 ? (
-            <motion.div
-              className="text-center text-gray-500 w-full"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.5, delay: 0.3 }}
-            >
-              No moves
-            </motion.div>
+        <div className="space-y-1">
+          {movePairs.length === 0 ? (
+            <div className="text-center text-slate-500 italic py-8 text-sm">
+              No moves yet
+            </div>
           ) : (
-            <>
-              {memoizedMoves.slice(0, -1)}
-              {moves.length > 0 && (
-                <motion.div
-                  key={moves.length}
-                  variants={newMoveVariants}
-                  initial="hidden"
-                  animate="visible"
-                >
-                  {memoizedMoves[memoizedMoves.length - 1]}
-                </motion.div>
-              )}
-            </>
+            movePairs.map((pair, i) => (
+              <div
+                key={i}
+                className="flex text-sm items-center hover:bg-slate-700/30 rounded-md px-2 py-1.5 transition-colors"
+              >
+                <span className="w-8 text-slate-500 font-medium text-right mr-3 flex-shrink-0 text-xs">
+                  {i + 1}.
+                </span>
+                <div className="flex gap-2 flex-1">
+                  {pair.white && (
+                    <button
+                      className={`px-2.5 py-1 rounded font-mono text-xs font-medium transition-all ${currentMoveIndex === pair.index
+                          ? "bg-slate-600/60 text-white"
+                          : "text-slate-300 hover:bg-slate-700/40 hover:text-white"
+                        }`}
+                      onClick={() => onMoveSelect(pair.index)}
+                    >
+                      {pair.white.san}
+                    </button>
+                  )}
+                  {pair.black && (
+                    <button
+                      className={`px-2.5 py-1 rounded font-mono text-xs font-medium transition-all ${currentMoveIndex === pair.index + 1
+                          ? "bg-slate-600/60 text-white"
+                          : "text-slate-300 hover:bg-slate-700/40 hover:text-white"
+                        }`}
+                      onClick={() => onMoveSelect(pair.index + 1)}
+                    >
+                      {pair.black.san}
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))
           )}
         </div>
       </div>

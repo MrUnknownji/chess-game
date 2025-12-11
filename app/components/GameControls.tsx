@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { PieceColor } from "../utils/types";
 import { useChessTimer } from "../hooks/useChessTimer";
 import { motion, AnimatePresence } from "framer-motion";
-import { FaUndo, FaRedo } from "react-icons/fa";
+import { FaUndo, FaRedo, FaChessKnight } from "react-icons/fa";
 
 interface GameControlsProps {
   currentPlayer: PieceColor;
@@ -10,6 +10,7 @@ interface GameControlsProps {
   result: string | null;
   onStartNewGame: () => void;
   onResign: () => void;
+  onAbort: () => void;
   isGameStarted: boolean;
   onUndo: () => void;
   onRedo: () => void;
@@ -17,6 +18,8 @@ interface GameControlsProps {
   canRedo: boolean;
   isReviewMode: boolean;
   onToggleReviewMode: () => void;
+  gameMode: 'pvp' | 'pve';
+  onToggleGameMode: () => void;
 }
 
 const GameControls: React.FC<GameControlsProps> = ({
@@ -25,6 +28,7 @@ const GameControls: React.FC<GameControlsProps> = ({
   result,
   onStartNewGame,
   onResign,
+  onAbort,
   isGameStarted,
   onUndo,
   onRedo,
@@ -32,6 +36,8 @@ const GameControls: React.FC<GameControlsProps> = ({
   canRedo,
   isReviewMode,
   onToggleReviewMode,
+  gameMode,
+  onToggleGameMode,
 }) => {
   const {
     whiteTime,
@@ -41,6 +47,7 @@ const GameControls: React.FC<GameControlsProps> = ({
     stopTimer,
     resetAndStart,
     switchPlayer,
+    resetTimer
   } = useChessTimer(600);
 
   const [resultHeight, setResultHeight] = useState(0);
@@ -59,6 +66,12 @@ const GameControls: React.FC<GameControlsProps> = ({
   };
 
   useEffect(() => {
+    if (!isGameStarted) {
+      resetTimer();
+    }
+  }, [isGameStarted, resetTimer]);
+
+  useEffect(() => {
     if (isGameStarted && !isGameOver) {
       startTimer();
     } else {
@@ -67,10 +80,10 @@ const GameControls: React.FC<GameControlsProps> = ({
   }, [isGameStarted, isGameOver, startTimer, stopTimer]);
 
   useEffect(() => {
-    if (currentPlayer !== activePlayer) {
+    if (currentPlayer !== activePlayer && isGameStarted) {
       switchPlayer();
     }
-  }, [currentPlayer, activePlayer, switchPlayer]);
+  }, [currentPlayer, activePlayer, switchPlayer, isGameStarted]);
 
   const handleNewGame = () => {
     resetAndStart();
@@ -82,72 +95,149 @@ const GameControls: React.FC<GameControlsProps> = ({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="bg-gradient-to-br from-gray-50 to-gray-100 p-6 rounded-lg shadow-lg border border-gray-200 w-80"
+      className="glass-panel p-6 rounded-2xl w-80 text-foreground"
     >
-      <h2 className="text-2xl font-semibold mb-6 text-gray-800 text-center">
-        Game Controls
-      </h2>
-      <div className="mb-6 space-y-4">
-        {["black", "white"].map((color) => (
+      <div className="flex items-center gap-2 mb-6">
+        <FaChessKnight className="text-slate-400 text-xl" />
+        <h2 className="text-xl font-semibold tracking-tight text-slate-100">
+          Game Controls
+        </h2>
+      </div>
+
+      <div className="flex justify-center mb-6">
+        <motion.button
+          onClick={onToggleGameMode}
+          disabled={isGameStarted && !isGameOver}
+          whileHover={{ scale: isGameStarted && !isGameOver ? 1 : 1.02 }}
+          whileTap={{ scale: isGameStarted && !isGameOver ? 1 : 0.98 }}
+          className={`px-4 py-2 text-sm font-medium rounded-lg transition-all flex items-center gap-2 border
+            ${isGameStarted && !isGameOver
+              ? "bg-slate-800/30 text-slate-500 border-slate-700/30 cursor-not-allowed"
+              : "bg-slate-700/40 hover:bg-slate-700/60 text-slate-200 border-slate-600/50"}`}
+        >
+          <span className="text-slate-400">Mode:</span>
+          <span className="font-semibold text-slate-100">
+            {gameMode === 'pvp' ? 'PvP' : 'vs AI'}
+          </span>
+        </motion.button>
+      </div>
+
+      <div className="mb-6 space-y-2">
+        {["white", "black"].map((color) => (
           <motion.div
             key={color}
-            initial={{ opacity: 0, x: -20 }}
+            initial={{ opacity: 0, x: -10 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.3, delay: color === "black" ? 0 : 0.1 }}
-            className="flex items-center justify-between"
+            transition={{ delay: color === "white" ? 0 : 0.05 }}
+            className={`flex items-center justify-between p-3 rounded-lg transition-all duration-200
+              ${currentPlayer === color && isGameStarted && !isGameOver
+                ? "bg-slate-700/50 border border-slate-600/50"
+                : "bg-slate-800/30 border border-slate-700/30"}`}
           >
-            <span className="text-lg font-medium capitalize text-gray-700">
-              {color}
-            </span>
-            <motion.div
-              animate={{
-                backgroundColor:
-                  currentPlayer === color && isGameStarted && !isGameOver
-                    ? "#DBEAFE"
-                    : "#E5E7EB",
-              }}
-              transition={{ duration: 0.3 }}
-              className={`p-2 rounded ${
-                currentPlayer === color && isGameStarted && !isGameOver
-                  ? "shadow-inner"
-                  : ""
-              }`}
-            >
-              <div className="text-xl font-mono tracking-wider text-gray-800">
-                {formatTime(color === "white" ? whiteTime : blackTime)}
-              </div>
-            </motion.div>
+            <div className="flex items-center gap-2.5">
+              <div className={`w-3 h-3 rounded-full ${color === 'white'
+                  ? 'bg-white'
+                  : 'bg-slate-800 border-2 border-slate-600'
+                }`} />
+              <span className={`text-sm font-medium capitalize ${currentPlayer === color && isGameStarted && !isGameOver
+                  ? "text-slate-100"
+                  : "text-slate-400"
+                }`}>
+                {color}
+              </span>
+            </div>
+            <div className={`font-mono text-lg font-semibold tracking-wide ${currentPlayer === color && isGameStarted && !isGameOver
+                ? "text-slate-100"
+                : "text-slate-500"
+              }`}>
+              {formatTime(color === "white" ? whiteTime : blackTime)}
+            </div>
           </motion.div>
         ))}
       </div>
-      <AnimatePresence mode="wait">
-        {!isGameStarted && (
-          <motion.button
-            key="start-game"
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9 }}
-            transition={{ duration: 0.3 }}
-            className="bg-gradient-to-b from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold py-2 px-6 rounded-md transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
-            onClick={handleNewGame}
+
+      <div className="flex flex-col gap-2.5">
+        <AnimatePresence mode="wait">
+          {!isGameStarted ? (
+            <motion.button
+              key="start-game"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="w-full py-3 rounded-lg font-semibold text-white bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 transition-colors shadow-sm"
+              onClick={handleNewGame}
+            >
+              Start New Game
+            </motion.button>
+          ) : !isGameOver ? (
+            <React.Fragment>
+              <motion.button
+                key="resign"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="w-full py-3 rounded-lg font-semibold text-white bg-red-600 hover:bg-red-700 active:bg-red-800 transition-colors shadow-sm"
+                onClick={onResign}
+              >
+                Resign
+              </motion.button>
+              <motion.button
+                key="abort"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="w-full py-2.5 rounded-lg font-medium text-slate-300 bg-slate-700/40 hover:bg-slate-700/60 border border-slate-600/50 transition-all"
+                onClick={onAbort}
+              >
+                Abort Game
+              </motion.button>
+            </React.Fragment>
+          ) : (
+            <motion.button
+              key="play-again"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="w-full py-3 rounded-lg font-semibold text-white bg-blue-600 hover:bg-blue-700 active:bg-blue-800 transition-colors shadow-sm"
+              onClick={handleNewGame}
+            >
+              Play Again
+            </motion.button>
+          )}
+        </AnimatePresence>
+      </div>
+
+      <AnimatePresence>
+        {isGameStarted && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="w-full"
           >
-            Start Game
-          </motion.button>
-        )}
-        {isGameStarted && !isGameOver && (
-          <motion.button
-            key="resign"
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9 }}
-            transition={{ duration: 0.3 }}
-            className="bg-gradient-to-b from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold py-2 px-6 rounded-md transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50"
-            onClick={onResign}
-          >
-            Resign
-          </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className={`w-full mt-3 py-2.5 rounded-lg text-sm font-medium transition-all border
+                ${isReviewMode
+                  ? "bg-purple-600/90 text-white border-purple-500/50"
+                  : "bg-slate-700/40 text-slate-300 hover:bg-slate-700/60 border-slate-600/50"}`}
+              onClick={onToggleReviewMode}
+            >
+              {isReviewMode ? "Exit Review Mode" : "Review Game"}
+            </motion.button>
+          </motion.div>
         )}
       </AnimatePresence>
+
       <AnimatePresence>
         {result && (
           <motion.div
@@ -155,18 +245,15 @@ const GameControls: React.FC<GameControlsProps> = ({
             animate="visible"
             exit="hidden"
             variants={resultVariants}
-            transition={{
-              duration: 0.3,
-              ease: "easeInOut",
-            }}
-            className="overflow-hidden"
+            className="overflow-hidden w-full mt-4"
           >
             <div
-              className="text-lg font-semibold text-center text-gray-800 p-3 bg-yellow-100 rounded-md border border-yellow-200"
+              className={`text-sm font-semibold text-center p-3.5 rounded-lg border ${result.includes("won") || result.includes("wins")
+                  ? "bg-emerald-600/20 border-emerald-500/30 text-emerald-200"
+                  : "bg-amber-600/20 border-amber-500/30 text-amber-200"
+                }`}
               ref={(el) => {
-                if (el && resultHeight === 0) {
-                  setResultHeight(el.offsetHeight);
-                }
+                if (el && resultHeight === 0) setResultHeight(el.offsetHeight);
               }}
             >
               {result}
@@ -174,49 +261,42 @@ const GameControls: React.FC<GameControlsProps> = ({
           </motion.div>
         )}
       </AnimatePresence>
-      {isGameOver && (
-        <motion.button
-          key="toggle-review-mode"
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.9 }}
-          transition={{ duration: 0.3 }}
-          className={`bg-gradient-to-b ${
-            isReviewMode
-              ? "from-green-500 to-green-600 hover:from-green-600 hover:to-green-700"
-              : "from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700"
-          } text-white font-semibold py-2 px-6 rounded-md transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-${
-            isReviewMode ? "green" : "purple"
-          }-500 focus:ring-opacity-50 mt-4`}
-          onClick={onToggleReviewMode}
-        >
-          {isReviewMode ? "Exit Review Mode" : "Enter Review Mode"}
-        </motion.button>
-      )}
 
       {isReviewMode && (
-        <div className="mt-4 flex justify-between">
-          <button
-            className={`bg-blue-500 text-white p-2 rounded ${
-              !canUndo ? "opacity-50 cursor-not-allowed" : "hover:bg-blue-600"
-            }`}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mt-4 flex justify-between gap-2.5"
+        >
+          <motion.button
+            whileHover={canUndo ? { scale: 1.02 } : {}}
+            whileTap={canUndo ? { scale: 0.98 } : {}}
+            className={`flex-1 py-2.5 rounded-lg font-medium transition-all flex justify-center items-center gap-2 border
+              ${!canUndo
+                ? "opacity-40 cursor-not-allowed bg-slate-800/30 text-slate-600 border-slate-700/30"
+                : "bg-slate-700/40 hover:bg-slate-700/60 text-slate-200 border-slate-600/50"}`}
             onClick={onUndo}
             disabled={!canUndo}
           >
-            <FaUndo />
-          </button>
-          <button
-            className={`bg-blue-500 text-white p-2 rounded ${
-              !canRedo ? "opacity-50 cursor-not-allowed" : "hover:bg-blue-600"
-            }`}
+            <FaUndo className="text-xs" />
+            <span>Prev</span>
+          </motion.button>
+          <motion.button
+            whileHover={canRedo ? { scale: 1.02 } : {}}
+            whileTap={canRedo ? { scale: 0.98 } : {}}
+            className={`flex-1 py-2.5 rounded-lg font-medium transition-all flex justify-center items-center gap-2 border
+              ${!canRedo
+                ? "opacity-40 cursor-not-allowed bg-slate-800/30 text-slate-600 border-slate-700/30"
+                : "bg-slate-700/40 hover:bg-slate-700/60 text-slate-200 border-slate-600/50"}`}
             onClick={onRedo}
             disabled={!canRedo}
           >
-            <FaRedo />
-          </button>
-        </div>
+            <span>Next</span>
+            <FaRedo className="text-xs" />
+          </motion.button>
+        </motion.div>
       )}
-    </motion.div>
+    </motion.div >
   );
 };
 

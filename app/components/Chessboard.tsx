@@ -2,12 +2,8 @@ import React, { useEffect, useState, useCallback } from "react";
 import { useDrop } from "react-dnd";
 import ChessPiece from "./ChessPiece";
 import { GameState, Piece, PieceColor } from "../utils/types";
-import {
-  isCheck,
-  isValidMove,
-  doesMoveResolveCheck,
-} from "../utils/moveValidation";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
+import { Chess } from "chess.js";
 
 interface ChessboardProps {
   gameState: GameState;
@@ -17,10 +13,12 @@ interface ChessboardProps {
     toRow: number,
     toCol: number,
   ) => void;
+  getValidMoves: (row: number, col: number) => [number, number][];
   isGameStarted: boolean;
   isGameOver: boolean;
   winner: PieceColor | null;
   isReviewMode: boolean;
+  game: Chess;
 }
 
 interface SquareProps {
@@ -60,55 +58,64 @@ const Square: React.FC<SquareProps> = ({
 
   const setDropRef = useCallback(
     (node: HTMLDivElement | null) => {
-      if (node) {
-        dropRef(node);
-      }
+      if (node) dropRef(node);
     },
     [dropRef],
   );
 
-  let bgColor = isLight ? "bg-[#f0d9b5]" : "bg-[#b58863]";
-  let hoverColor = isLight ? "hover:bg-[#e6cfa5]" : "hover:bg-[#a57853]";
+  let bgColor = isLight ? "bg-board-light" : "bg-board-dark";
 
+  // Highlighting logic
   if (isLastMove) {
-    bgColor = isLight ? "bg-[#d4e4a7]" : "bg-[#baca8f]";
+    bgColor = isLight ? "bg-board-light-active" : "bg-board-dark-active";
   }
 
   if (isSelected) {
-    bgColor = "bg-[#f7ec5e]";
-    hoverColor = "hover:bg-[#f8e94e]";
+    bgColor = "bg-primary-400 bg-opacity-70";
   } else if (isPossibleMove) {
-    bgColor = isLight ? "bg-[#cdd26a]" : "bg-[#aaa23a]";
-    hoverColor = isLight ? "hover:bg-[#bdc25a]" : "hover:bg-[#9a922a]";
+    if (piece) { // Capture move
+      bgColor = "bg-red-400 bg-opacity-60";
+    } else {
+      // Just a dot usually, but here we color the square
+      // We'll handle dot in the children
+    }
   }
 
   return (
     <div
       ref={setDropRef}
-      className={`w-full h-full ${bgColor} ${hoverColor} ${
-        isOver ? "brightness-110" : ""
-      } transition-all duration-200 ease-in-out relative aspect-square`}
+      className={`w-full h-full ${bgColor} ${isOver ? "brightness-110" : ""
+        } transition-colors duration-200 ease-in-out relative aspect-square flex items-center justify-center`}
       onClick={onClick}
     >
-      {isInCheck && (
-        <div
-          className="absolute inset-0"
-          style={{
-            background:
-              "radial-gradient(ellipse at center, rgba(255,0,0,0.5) 0%, rgba(255,0,0,0) 70%)",
-          }}
-        />
-      )}
+      {/* Coordinate Labels */}
       {row === 7 && (
-        <span className="absolute bottom-1 right-1 text-xs font-semibold text-gray-600">
+        <span className={`absolute bottom-0.5 right-1 text-[10px] font-bold ${isLight ? "text-board-dark" : "text-board-light"}`}>
           {String.fromCharCode(97 + col)}
         </span>
       )}
       {col === 0 && (
-        <span className="absolute top-1 left-1 text-xs font-semibold text-gray-600">
+        <span className={`absolute top-0.5 left-1 text-[10px] font-bold ${isLight ? "text-board-dark" : "text-board-light"}`}>
           {8 - row}
         </span>
       )}
+
+      {/* Possible Move Marker (Dot) */}
+      {isPossibleMove && !piece && (
+        <div className="absolute w-3 h-3 bg-black bg-opacity-20 rounded-full"></div>
+      )}
+
+      {/* Capture Ring */}
+      {isPossibleMove && piece && (
+        <div className="absolute w-[90%] h-[90%] border-4 border-black border-opacity-10 rounded-full"></div>
+      )}
+
+      {/* Check Indicator */}
+      {isInCheck && (
+        <div className="absolute inset-0 bg-red-600 bg-opacity-50 ring-inset ring-4 ring-red-600" />
+      )}
+
+      {/* Piece */}
       {piece && (
         <ChessPiece
           type={piece.type}
@@ -126,10 +133,12 @@ const Square: React.FC<SquareProps> = ({
 const Chessboard: React.FC<ChessboardProps> = ({
   gameState,
   onMove,
+  getValidMoves,
   isGameStarted,
   isGameOver,
   winner,
   isReviewMode,
+  game,
 }) => {
   const { board, currentPlayer } = gameState;
   const [selectedSquare, setSelectedSquare] = useState<[number, number] | null>(
@@ -138,84 +147,63 @@ const Chessboard: React.FC<ChessboardProps> = ({
   const [possibleMoves, setPossibleMoves] = useState<[number, number][]>([]);
 
   useEffect(() => {
-    if (isGameOver) {
+    if (isGameOver || isReviewMode) {
       setSelectedSquare(null);
       setPossibleMoves([]);
     }
-  }, [isGameOver]);
-
-  const calculatePossibleMoves = useCallback(
-    (row: number, col: number) => {
-      const newPossibleMoves: [number, number][] = [];
-      for (let i = 0; i < 8; i++) {
-        for (let j = 0; j < 8; j++) {
-          if (
-            isValidMove(gameState, row, col, i, j) &&
-            (isCheck(gameState, gameState.currentPlayer)
-              ? doesMoveResolveCheck(gameState, row, col, i, j)
-              : true)
-          ) {
-            newPossibleMoves.push([i, j]);
-          }
-        }
-      }
-      return newPossibleMoves;
-    },
-    [gameState],
-  );
+  }, [isGameOver, isReviewMode]);
 
   const handleSquareClick = useCallback(
     (row: number, col: number) => {
-      if (!isGameStarted || isGameOver) return;
-      const piece = gameState.board[row][col];
+      if (!isGameStarted || isGameOver || isReviewMode) return;
+      const piece = board[row][col];
 
-      if (selectedSquare) {
-        const [fromRow, fromCol] = selectedSquare;
-        if (piece && piece.color === gameState.currentPlayer) {
-          setSelectedSquare([row, col]);
-        } else if (
-          isValidMove(gameState, fromRow, fromCol, row, col) &&
-          (isCheck(gameState, gameState.currentPlayer)
-            ? doesMoveResolveCheck(gameState, fromRow, fromCol, row, col)
-            : true)
-        ) {
-          onMove(fromRow, fromCol, row, col);
-          setSelectedSquare(null);
-        }
+      // If clicking same square, deselect
+      if (selectedSquare && selectedSquare[0] === row && selectedSquare[1] === col) {
+        setSelectedSquare(null);
+        setPossibleMoves([]);
+        return;
+      }
+
+      // If clicking a possible move
+      const isMove = possibleMoves.some(([r, c]) => r === row && c === col);
+      if (selectedSquare && isMove) {
+        onMove(selectedSquare[0], selectedSquare[1], row, col);
+        setSelectedSquare(null);
+        setPossibleMoves([]);
+        return;
+      }
+
+      // If clicking own piece, select it
+      if (piece && piece.color === currentPlayer) {
+        setSelectedSquare([row, col]);
+        const moves = getValidMoves(row, col);
+        setPossibleMoves(moves);
       } else {
-        if (piece && piece.color === gameState.currentPlayer) {
-          setSelectedSquare([row, col]);
-        }
+        // Clicking empty or enemy square without valid move
+        setSelectedSquare(null);
+        setPossibleMoves([]);
       }
     },
-    [gameState, selectedSquare, isGameStarted, isGameOver, onMove],
+    [selectedSquare, possibleMoves, isGameStarted, isGameOver, isReviewMode, currentPlayer, onMove, getValidMoves, board],
   );
 
   const handlePieceDrop = useCallback(
     (fromRow: number, fromCol: number, toRow: number, toCol: number) => {
-      if (!isGameStarted || isGameOver) return;
+      if (!isGameStarted || isGameOver || isReviewMode) return;
 
-      if (
-        isValidMove(gameState, fromRow, fromCol, toRow, toCol) &&
-        (isCheck(gameState, gameState.currentPlayer)
-          ? doesMoveResolveCheck(gameState, fromRow, fromCol, toRow, toCol)
-          : true)
-      ) {
+      // Validate move via getValidMoves (re-calculate to be safe)
+      const moves = getValidMoves(fromRow, fromCol);
+      const isValid = moves.some(([r, c]) => r === toRow && c === toCol);
+
+      if (isValid) {
         onMove(fromRow, fromCol, toRow, toCol);
         setSelectedSquare(null);
+        setPossibleMoves([]);
       }
     },
-    [gameState, isGameStarted, isGameOver, onMove],
+    [isGameStarted, isGameOver, isReviewMode, onMove, getValidMoves],
   );
-
-  useEffect(() => {
-    if (selectedSquare) {
-      const [row, col] = selectedSquare;
-      setPossibleMoves(calculatePossibleMoves(row, col));
-    } else {
-      setPossibleMoves([]);
-    }
-  }, [selectedSquare, calculatePossibleMoves]);
 
   const renderSquare = useCallback(
     (row: number, col: number) => {
@@ -226,19 +214,24 @@ const Chessboard: React.FC<ChessboardProps> = ({
       const isPossibleMove = possibleMoves.some(
         ([r, c]) => r === row && c === col,
       );
-      const lastMove =
-        gameState.currentMoveIndex > 0
-          ? gameState.moveHistory[gameState.currentMoveIndex - 1]
-          : null;
-      const isLastMove =
-        !!(lastMove &&
-        ((lastMove.from[0] === row && lastMove.from[1] === col) ||
-          (lastMove.to[0] === row && lastMove.to[1] === col)));
+
+      const lastMove = game.history({ verbose: true }).pop();
+      let isLastMove = false;
+      if (lastMove) {
+        const fromRow = 8 - parseInt(lastMove.from[1]);
+        const fromCol = lastMove.from.charCodeAt(0) - 97;
+        const toRow = 8 - parseInt(lastMove.to[1]);
+        const toCol = lastMove.to.charCodeAt(0) - 97;
+        if ((row === fromRow && col === fromCol) || (row === toRow && col === toCol)) {
+          isLastMove = true;
+        }
+      }
+
       const piece = board[row][col];
       const isInCheck =
         piece?.type === "king" &&
-        piece?.color === gameState.currentPlayer &&
-        isCheck(gameState, gameState.currentPlayer);
+        piece?.color === currentPlayer &&
+        game.inCheck();
 
       return (
         <Square
@@ -266,7 +259,7 @@ const Chessboard: React.FC<ChessboardProps> = ({
       handleSquareClick,
       handlePieceDrop,
       currentPlayer,
-      gameState,
+      game,
     ],
   );
 
@@ -277,64 +270,34 @@ const Chessboard: React.FC<ChessboardProps> = ({
     const backgroundColor = winner === "white" ? "bg-black" : "bg-white";
 
     return (
-      <div className="absolute inset-0 flex items-center justify-center z-10">
+      <div className="absolute inset-0 flex items-center justify-center z-10 rounded-lg overflow-hidden pointer-events-none">
         <div
           className={`${backgroundColor} bg-opacity-70 absolute inset-0`}
         ></div>
-        <div
-          className={`${color} text-9xl font-bold transform -rotate-45 select-none`}
-          style={{ textShadow: "2px 2px 4px rgba(0,0,0,0.5)" }}
+        <motion.div
+          initial={{ scale: 0.5, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1, rotate: -15 }}
+          className={`${color} text-6xl md:text-8xl font-black select-none tracking-tighter`}
+          style={{ textShadow: "0 10px 30px rgba(0,0,0,0.5)" }}
         >
-          {winner.toUpperCase()} WINS!
-        </div>
+          {winner.toUpperCase()} <br /> WINS!
+        </motion.div>
       </div>
     );
   }, [winner]);
 
-  const boardVariants = {
-    hidden: { opacity: 0, scale: 0.9 },
-    visible: {
-      opacity: 1,
-      scale: 1,
-      transition: {
-        duration: 0.5,
-        ease: "easeOut",
-      },
-    },
-  };
-
-  const squareVariants = {
-    initial: { opacity: 0, scale: 0.8 },
-    animate: { opacity: 1, scale: 1 },
-    exit: { opacity: 0, scale: 0.8 },
-  };
-
   return (
     <motion.div
-      className="relative"
-      initial="hidden"
-      animate="visible"
-      variants={boardVariants}
+      className="relative chess-board rounded-lg w-full max-w-[640px] mx-auto"
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.5 }}
     >
-      <div className="border-8 border-[#8b4513] rounded-lg shadow-2xl overflow-hidden w-full max-w-[min(calc(100vh-200px),640px)] aspect-square">
+      <div className="border-[12px] border-zinc-800 rounded-lg shadow-2xl overflow-hidden w-full aspect-square bg-zinc-800">
         <div className="grid grid-cols-8 w-full h-full">
-          <AnimatePresence>
-            {Array.from({ length: 8 }, (_, row) =>
-              Array.from({ length: 8 }, (_, col) => (
-                <motion.div
-                  key={`${row}-${col}`}
-                  variants={squareVariants}
-                  initial="initial"
-                  animate="animate"
-                  exit="exit"
-                  transition={{ duration: 0.2, delay: (row * 8 + col) * 0.01 }}
-                  className="w-full h-full"
-                >
-                  {renderSquare(row, col)}
-                </motion.div>
-              )),
-            )}
-          </AnimatePresence>
+          {Array.from({ length: 8 }, (_, row) =>
+            Array.from({ length: 8 }, (_, col) => renderSquare(row, col))
+          )}
         </div>
       </div>
       {!isReviewMode && renderCelebration()}

@@ -1,3 +1,5 @@
+import { Move as ChessJsMove } from "chess.js";
+
 export type PieceType =
   | "pawn"
   | "rook"
@@ -12,31 +14,14 @@ export interface Piece {
   color: PieceColor;
 }
 
+export type Board = (Piece | null)[][];
+
+// Use chess.js Move type for history
+export type Move = ChessJsMove;
+
 export interface GameState {
   board: Board;
   currentPlayer: PieceColor;
-  enPassantTarget: [number, number] | null;
-  whiteKingMoved: boolean;
-  blackKingMoved: boolean;
-  whiteRooksMoved: [boolean, boolean];
-  blackRooksMoved: [boolean, boolean];
-  pendingPromotion: {
-    from: [number, number];
-    to: [number, number];
-  } | null;
-  positionHistory: string[];
-  movesSincePawnMoveOrCapture: number;
   moveHistory: Move[];
   currentMoveIndex: number;
-}
-
-export type Board = (Piece | null)[][];
-
-export interface Move {
-  from: [number, number];
-  to: [number, number];
-  piece: Piece;
-  capturedPiece: Piece | null;
-  isPromotion: boolean;
-  promotedTo?: PieceType;
 }
