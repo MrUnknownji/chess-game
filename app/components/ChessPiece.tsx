@@ -28,7 +28,7 @@ const ChessPiece: React.FC<ChessPieceProps> = ({
     () => ({
       type: "chess-piece",
       item: () => {
-        onPieceSelect();
+        if (isCurrentPlayer) onPieceSelect();
         return { fromRow: row, fromCol: col, type, color };
       },
       canDrag: isCurrentPlayer,
@@ -52,16 +52,21 @@ const ChessPiece: React.FC<ChessPieceProps> = ({
   return (
     <div
       ref={pieceRef}
-      className={`${
-        color === "white" ? "text-white" : "text-black"
-      } cursor-move absolute inset-0 flex items-center justify-center w-full h-full`}
+      className={`absolute inset-0 flex items-center justify-center w-full h-full ${
+        isCurrentPlayer ? "cursor-grab active:cursor-grabbing" : "cursor-default"
+      }`}
       style={{
         opacity: _isDragging ? 0 : 1,
-        cursor: "move",
-        display: isDragging ? "block" : "flex",
+        display: isDragging ? "block" : "flex", // Keep flex to center, block if dragging logic requires it (though usually drag source is hidden)
       }}
     >
-      <div className="w-3/4 h-3/4">{pieceIcon}</div>
+      <div
+        className={`w-[85%] h-[85%] piece-shadow transition-transform duration-200 ${
+          isCurrentPlayer ? "hover:scale-110 active:scale-95" : ""
+        }`}
+      >
+        {pieceIcon}
+      </div>
     </div>
   );
 };

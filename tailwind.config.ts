@@ -25,10 +25,10 @@ const config: Config = {
           950: "#082f49",
         },
         board: {
-          light: "#ebecd0",
-          dark: "#779556",
-          "light-active": "#f7f769",
-          "dark-active": "#bbc938",
+          light: "#e2e8f0", // slate-200
+          dark: "#475569",  // slate-600
+          "light-active": "#7dd3fc", // sky-300
+          "dark-active": "#0ea5e9",  // sky-500
         },
       },
       animation: {
