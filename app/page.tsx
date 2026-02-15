@@ -51,6 +51,7 @@ export default function Home() {
                 winner={winner}
                 isReviewMode={isReviewMode}
                 game={game}
+                onReset={handleStartNewGame}
               />
             </div>
           </div>

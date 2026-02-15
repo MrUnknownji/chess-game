@@ -2,8 +2,9 @@ import React, { useEffect, useState, useCallback } from "react";
 import { useDrop } from "react-dnd";
 import ChessPiece from "./ChessPiece";
 import { GameState, Piece, PieceColor } from "../utils/types";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Chess } from "chess.js";
+import Confetti from "react-confetti";
 
 interface ChessboardProps {
   gameState: GameState;
@@ -19,6 +20,7 @@ interface ChessboardProps {
   winner: PieceColor | null;
   isReviewMode: boolean;
   game: Chess;
+  onReset: () => void;
 }
 
 interface SquareProps {
@@ -63,57 +65,64 @@ const Square: React.FC<SquareProps> = ({
     [dropRef],
   );
 
-  let bgColor = isLight ? "bg-board-light" : "bg-board-dark";
-
-  // Highlighting logic
-  if (isLastMove) {
-    bgColor = isLight ? "bg-board-light-active" : "bg-board-dark-active";
-  }
+  // Base background color with gradients
+  let bgClasses = isLight
+    ? "bg-board-light bg-gradient-to-br from-transparent to-black/5"
+    : "bg-board-dark bg-gradient-to-br from-transparent to-black/10";
 
   if (isSelected) {
-    bgColor = "bg-primary-400 bg-opacity-70";
-  } else if (isPossibleMove) {
-    if (piece) { // Capture move
-      bgColor = "bg-red-400 bg-opacity-60";
-    } else {
-      // Just a dot usually, but here we color the square
-      // We'll handle dot in the children
-    }
+    bgClasses = "bg-yellow-200/50 mix-blend-multiply"; // Subtle yellow selection
+  } else if (isLastMove) {
+    bgClasses = isLight ? "bg-board-light-active" : "bg-board-dark-active";
   }
 
   return (
     <div
       ref={setDropRef}
-      className={`w-full h-full ${bgColor} ${isOver ? "brightness-110" : ""
-        } transition-colors duration-200 ease-in-out relative aspect-square flex items-center justify-center`}
+      className={`w-full h-full ${bgClasses} ${
+        isOver ? "brightness-110" : ""
+      } relative aspect-square flex items-center justify-center select-none`}
       onClick={onClick}
     >
       {/* Coordinate Labels */}
       {row === 7 && (
-        <span className={`absolute bottom-0.5 right-1 text-[10px] font-bold ${isLight ? "text-board-dark" : "text-board-light"}`}>
+        <span
+          className={`absolute bottom-0.5 right-1 text-[9px] font-bold ${
+            isLight ? "text-slate-500" : "text-slate-300"
+          } opacity-70`}
+        >
           {String.fromCharCode(97 + col)}
         </span>
       )}
       {col === 0 && (
-        <span className={`absolute top-0.5 left-1 text-[10px] font-bold ${isLight ? "text-board-dark" : "text-board-light"}`}>
+        <span
+          className={`absolute top-0.5 left-1 text-[9px] font-bold ${
+            isLight ? "text-slate-500" : "text-slate-300"
+          } opacity-70`}
+        >
           {8 - row}
         </span>
       )}
 
-      {/* Possible Move Marker (Dot) */}
+      {/* Possible Move Marker */}
       {isPossibleMove && !piece && (
-        <div className="absolute w-3 h-3 bg-black bg-opacity-20 rounded-full"></div>
+        <div className="absolute w-3 h-3 bg-black/20 rounded-full" />
       )}
 
-      {/* Capture Ring */}
+      {/* Capture Indicator */}
       {isPossibleMove && piece && (
-        <div className="absolute w-[90%] h-[90%] border-4 border-black border-opacity-10 rounded-full"></div>
+        <div className="absolute w-full h-full rounded-full border-[5px] border-black/10" />
       )}
 
       {/* Check Indicator */}
       {isInCheck && (
-        <div className="absolute inset-0 bg-red-600 bg-opacity-50 ring-inset ring-4 ring-red-600" />
+        <div className="absolute inset-0 bg-red-500/40 rounded-sm"
+             style={{ boxShadow: "inset 0 0 10px 4px rgba(220, 38, 38, 0.5)" }}
+        />
       )}
+
+      {/* Last Move Highlight Border (if needed on top of color) */}
+      {isLastMove && <div className="absolute inset-0 ring-4 ring-yellow-400/20" />}
 
       {/* Piece */}
       {piece && (
@@ -139,12 +148,22 @@ const Chessboard: React.FC<ChessboardProps> = ({
   winner,
   isReviewMode,
   game,
+  onReset,
 }) => {
   const { board, currentPlayer } = gameState;
   const [selectedSquare, setSelectedSquare] = useState<[number, number] | null>(
     null,
   );
   const [possibleMoves, setPossibleMoves] = useState<[number, number][]>([]);
+  const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
+
+  useEffect(() => {
+    // Client-side window size for confetti
+    setWindowSize({ width: window.innerWidth, height: window.innerHeight });
+    const handleResize = () => setWindowSize({ width: window.innerWidth, height: window.innerHeight });
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   useEffect(() => {
     if (isGameOver || isReviewMode) {
@@ -267,40 +286,62 @@ const Chessboard: React.FC<ChessboardProps> = ({
     if (!winner) return null;
 
     const color = winner === "white" ? "text-white" : "text-black";
-    const backgroundColor = winner === "white" ? "bg-black" : "bg-white";
+    const bg = winner === "white" ? "bg-slate-900" : "bg-slate-100";
 
     return (
-      <div className="absolute inset-0 flex items-center justify-center z-10 rounded-lg overflow-hidden pointer-events-none">
-        <div
-          className={`${backgroundColor} bg-opacity-70 absolute inset-0`}
-        ></div>
+      <div className="fixed inset-0 flex items-center justify-center z-50 pointer-events-auto">
+        <div className={`absolute inset-0 ${bg} opacity-90 backdrop-blur-md`}></div>
+        <Confetti
+          width={windowSize.width}
+          height={windowSize.height}
+          numberOfPieces={800}
+          recycle={true}
+          className="z-50"
+        />
         <motion.div
-          initial={{ scale: 0.5, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1, rotate: -15 }}
-          className={`${color} text-6xl md:text-8xl font-black select-none tracking-tighter`}
-          style={{ textShadow: "0 10px 30px rgba(0,0,0,0.5)" }}
+          initial={{ scale: 0.5, opacity: 0, y: 20 }}
+          animate={{ scale: 1, opacity: 1, y: 0 }}
+          transition={{ type: "spring", bounce: 0.5, duration: 0.8 }}
+          className={`${color} z-[60] text-center flex flex-col items-center gap-6 p-12 rounded-3xl bg-white/5 border border-white/10 shadow-2xl backdrop-blur-xl`}
         >
-          {winner.toUpperCase()} <br /> WINS!
+          <div className="text-8xl font-black tracking-tighter drop-shadow-[0_0_15px_rgba(255,255,255,0.5)]">
+            {winner.toUpperCase()} <br /> WINS
+          </div>
+          <div className="text-3xl font-bold opacity-90 tracking-widest uppercase">
+            Checkmate
+          </div>
+          <button
+            onClick={onReset}
+            className="mt-8 px-8 py-3 bg-white/20 hover:bg-white/30 text-current rounded-full font-bold transition-all hover:scale-105 active:scale-95"
+          >
+            Play Again
+          </button>
         </motion.div>
       </div>
     );
-  }, [winner]);
+  }, [winner, windowSize, onReset]);
 
   return (
     <motion.div
-      className="relative chess-board rounded-lg w-full max-w-[640px] mx-auto"
+      className="relative chess-board rounded-lg w-full max-w-[640px] mx-auto shadow-2xl"
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.5 }}
     >
-      <div className="border-[12px] border-zinc-800 rounded-lg shadow-2xl overflow-hidden w-full aspect-square bg-zinc-800">
-        <div className="grid grid-cols-8 w-full h-full">
-          {Array.from({ length: 8 }, (_, row) =>
-            Array.from({ length: 8 }, (_, col) => renderSquare(row, col))
-          )}
+      {/* Board Border/Container */}
+      <div className="p-3 bg-slate-800 rounded-lg shadow-xl border border-slate-700">
+        <div className="rounded-md overflow-hidden shadow-inner w-full aspect-square ring-1 ring-white/10">
+          <div className="grid grid-cols-8 w-full h-full">
+            {Array.from({ length: 8 }, (_, row) =>
+              Array.from({ length: 8 }, (_, col) => renderSquare(row, col))
+            )}
+          </div>
         </div>
       </div>
-      {!isReviewMode && renderCelebration()}
+
+      <AnimatePresence>
+        {!isReviewMode && winner && renderCelebration()}
+      </AnimatePresence>
     </motion.div>
   );
 };
